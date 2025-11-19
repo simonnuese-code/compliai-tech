@@ -47,6 +47,8 @@ This project uses the following technologies:
   validation library.
 - **[React Hook Form](https://react-hook-form.com/)**: Performant, flexible and
   extensible forms with easy-to-use validation.
+- **[motion](https://motion.dev/)**: A modern animation library for React
+  (formerly framer-motion).
 
 ## 🛠️ Getting Started
 
