@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "typecheck": "rm -rf .next && tsc --noEmit",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "playwright test"
   },
   "dependencies": {
