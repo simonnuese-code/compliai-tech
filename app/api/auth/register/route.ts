@@ -1,71 +1,81 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
-import bcrypt from "bcryptjs";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import bcrypt from 'bcryptjs'
+import { prisma } from '@/lib/prisma'
+import { sendVerificationEmail } from '@/lib/email'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 const registerSchema = z.object({
-  email: z.string().email("Ungültige E-Mail-Adresse"),
-  password: z.string().min(10, "Passwort muss mindestens 10 Zeichen lang sein"),
-  name: z.string().optional(),
-});
+  email: z.string().email(),
+  password: z.string().min(10),
+  name: z.string().min(1),
+})
+
+// Generiere 6-stelligen Code
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const result = registerSchema.safeParse(body);
+    const body = await request.json()
+    const result = registerSchema.safeParse(body)
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, errors: result.error.flatten().fieldErrors },
+        { error: 'Ungültige Eingaben' },
         { status: 400 }
-      );
+      )
     }
 
-    const { email, password, name } = result.data;
+    const { email, password, name } = result.data
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
-    });
+    })
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "E-Mail wird bereits verwendet." },
+        { error: 'Email bereits registriert' },
         { status: 400 }
-      );
+      )
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10)
+    const verificationCode = generateVerificationCode()
+    const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000) // 15 Min
 
-    // Create user
-    const user = await prisma.user.create({
+    // User erstellen OHNE emailVerified
+    await prisma.user.create({
       data: {
         email,
         passwordHash,
         name,
+        verificationToken: verificationCode,
+        verificationTokenExpiry,
       },
-    });
+    })
 
-    // Create session
-    const session = await getSession();
-    session.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    };
-    session.isLoggedIn = true;
-    await session.save();
+    // Email senden
+    const emailResult = await sendVerificationEmail(email, verificationCode, name)
 
-    return NextResponse.json({ success: true });
+    if (!emailResult.success) {
+      return NextResponse.json(
+        { error: 'Email konnte nicht gesendet werden' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      message: 'Registrierung erfolgreich. Bitte prüfe deine Emails.',
+      email, // Für Redirect zur Verify-Seite
+    })
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error('Registration error:', error)
     return NextResponse.json(
-      { success: false, message: "Interner Serverfehler" },
+      { error: 'Serverfehler' },
       { status: 500 }
-    );
+    )
   }
 }

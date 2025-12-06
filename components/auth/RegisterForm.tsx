@@ -56,12 +56,12 @@ export function RegisterForm() {
                 throw new Error(result.message || "Ein Fehler ist aufgetreten.");
             }
 
-            router.push("/dashboard");
-            router.refresh();
-        } catch (err: any) {
-            setError(err.message);
+            // Redirect to verification page
+            router.push(`/verify?email=${encodeURIComponent(data.email)}`)
+        } catch (error) {
+            setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.")
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
     };
 

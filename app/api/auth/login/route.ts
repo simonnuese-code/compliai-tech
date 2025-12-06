@@ -45,6 +45,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { success: false, message: "Bitte verifiziere zuerst deine E-Mail-Adresse." },
+        { status: 403 }
+      );
+    }
+
     const session = await getSession();
     session.user = {
       id: user.id,
