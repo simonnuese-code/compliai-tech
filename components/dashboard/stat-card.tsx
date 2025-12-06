@@ -1,12 +1,14 @@
+'use client'
+
 import { GlassCard } from '@/components/ui/glass-card'
-import { LucideIcon } from 'lucide-react'
+import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface StatCardProps {
     title: string
     value: string | number
-    icon: LucideIcon
+    icon: ReactNode
     trend?: {
         value: number
         isPositive: boolean
@@ -14,7 +16,7 @@ interface StatCardProps {
     color?: 'blue' | 'green' | 'amber' | 'red'
 }
 
-export function StatCard({ title, value, icon: Icon, trend, color = 'blue' }: StatCardProps) {
+export function StatCard({ title, value, icon, trend, color = 'blue' }: StatCardProps) {
     const colorClasses = {
         blue: 'text-sky-400',
         green: 'text-emerald-400',
@@ -26,28 +28,29 @@ export function StatCard({ title, value, icon: Icon, trend, color = 'blue' }: St
         <GlassCard hover padding="lg">
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm text-gray-400">{title}</p>
+                    <p className="text-sm font-medium text-slate-500">{title}</p>
                     <motion.p
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-3xl font-bold text-white mt-2"
+                        className="text-3xl font-bold text-slate-900 mt-2"
                     >
                         {value}
                     </motion.p>
                     {trend && (
                         <p className={cn(
-                            "text-sm mt-2",
-                            trend.isPositive ? "text-emerald-400" : "text-red-400"
+                            "text-sm mt-2 font-medium",
+                            trend.isPositive ? "text-emerald-600" : "text-red-600"
                         )}>
                             {trend.isPositive ? '↑' : '↓'} {trend.value}%
                         </p>
                     )}
                 </div>
                 <div className={cn(
-                    "p-3 rounded-xl backdrop-blur-sm",
-                    "bg-white/5 border border-white/10"
+                    "p-3 rounded-xl",
+                    "bg-slate-50 border border-slate-100",
+                    colorClasses[color]
                 )}>
-                    <Icon className={cn("w-6 h-6", colorClasses[color])} />
+                    {icon}
                 </div>
             </div>
         </GlassCard>

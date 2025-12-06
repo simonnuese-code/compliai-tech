@@ -1,3 +1,5 @@
+'use client'
+
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -30,11 +32,11 @@ export function GlassCard({
             transition={{ duration: 0.2 }}
             onClick={onClick}
             className={cn(
-                // Base styles matching Landing Page
-                "backdrop-blur-xl bg-white/5 border border-white/10",
-                "rounded-2xl shadow-xl",
+                // Base styles matching Landing Page (Light Mode)
+                "bg-white border border-slate-200",
+                "rounded-xl shadow-sm",
                 paddingClasses[padding],
-                hover && "cursor-pointer transition-shadow hover:shadow-2xl hover:bg-white/10",
+                hover && "cursor-pointer transition-all hover:shadow-md hover:border-slate-300",
                 className
             )}
         >

@@ -58,7 +58,7 @@ export function Sidebar({ user }: SidebarProps) {
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
             {/* Logo */}
-            <div className="p-6 border-b border-white/10">
+            <div className="p-6 border-b border-slate-100">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -66,18 +66,18 @@ export function Sidebar({ user }: SidebarProps) {
                 >
                     {!collapsed && (
                         <>
-                            <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-md shadow-cyan-500/20">
                                 <span className="text-white font-bold">C</span>
                             </div>
-                            <span className="text-xl font-bold text-white">CompliAI</span>
+                            <span className="text-xl font-bold text-slate-900">CompliAI</span>
                         </>
                     )}
                     <button
                         onClick={() => setCollapsed(!collapsed)}
-                        className="ml-auto p-2 hover:bg-white/5 rounded-lg transition-colors"
+                        className="ml-auto p-2 hover:bg-slate-100 rounded-lg transition-colors"
                     >
                         <ChevronLeft className={cn(
-                            "w-5 h-5 text-gray-400 transition-transform",
+                            "w-5 h-5 text-slate-400 transition-transform",
                             collapsed && "rotate-180"
                         )} />
                     </button>
@@ -85,7 +85,7 @@ export function Sidebar({ user }: SidebarProps) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
@@ -95,21 +95,20 @@ export function Sidebar({ user }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
-                                "hover:bg-white/10",
-                                isActive && "bg-white/10 backdrop-blur-sm border border-white/20",
+                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                                "hover:bg-slate-50",
+                                isActive
+                                    ? "bg-slate-100 text-slate-900 font-semibold shadow-sm"
+                                    : "text-slate-500 font-medium",
                                 collapsed && "justify-center"
                             )}
                         >
                             <Icon className={cn(
-                                "w-5 h-5 flex-shrink-0",
-                                isActive ? "text-sky-400" : "text-gray-400"
+                                "w-5 h-5 flex-shrink-0 transition-colors",
+                                isActive ? "text-cyan-600" : "text-slate-400 group-hover:text-slate-600"
                             )} />
                             {!collapsed && (
-                                <span className={cn(
-                                    "text-sm font-medium",
-                                    isActive ? "text-white" : "text-gray-300"
-                                )}>
+                                <span>
                                     {item.label}
                                 </span>
                             )}
@@ -119,16 +118,16 @@ export function Sidebar({ user }: SidebarProps) {
             </nav>
 
             {/* User Section */}
-            <div className="p-4 border-t border-white/10">
+            <div className="p-4 border-t border-slate-100">
                 {!collapsed ? (
                     <div className="space-y-3">
-                        <div className="px-4 py-3 rounded-xl bg-white/5">
-                            <p className="text-sm font-medium text-white truncate">{user.name || 'User'}</p>
-                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        <div className="px-4 py-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{user.name || 'User'}</p>
+                            <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-colors text-gray-300 hover:text-white"
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-900"
                         >
                             <LogOut className="w-5 h-5" />
                             <span className="text-sm font-medium">Abmelden</span>
@@ -137,9 +136,9 @@ export function Sidebar({ user }: SidebarProps) {
                 ) : (
                     <button
                         onClick={handleLogout}
-                        className="w-full p-3 rounded-xl hover:bg-white/10 transition-colors"
+                        className="w-full p-3 rounded-xl hover:bg-slate-50 transition-colors"
                     >
-                        <LogOut className="w-5 h-5 text-gray-400 mx-auto" />
+                        <LogOut className="w-5 h-5 text-slate-400 mx-auto" />
                     </button>
                 )}
             </div>
@@ -154,7 +153,7 @@ export function Sidebar({ user }: SidebarProps) {
                 animate={{ x: 0, opacity: 1 }}
                 className={cn(
                     "hidden lg:flex flex-col h-screen sticky top-0",
-                    "backdrop-blur-xl bg-slate-900/90 border-r border-white/10",
+                    "bg-white border-r border-slate-200 shadow-sm z-30",
                     "transition-all duration-300",
                     collapsed ? "w-20" : "w-64"
                 )}
@@ -165,12 +164,12 @@ export function Sidebar({ user }: SidebarProps) {
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl backdrop-blur-xl bg-slate-900/90 border border-white/10"
+                className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white border border-slate-200 shadow-md"
             >
                 {mobileOpen ? (
-                    <X className="w-6 h-6 text-white" />
+                    <X className="w-6 h-6 text-slate-900" />
                 ) : (
-                    <Menu className="w-6 h-6 text-white" />
+                    <Menu className="w-6 h-6 text-slate-900" />
                 )}
             </button>
 
@@ -182,7 +181,7 @@ export function Sidebar({ user }: SidebarProps) {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                            className="lg:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
                             onClick={() => setMobileOpen(false)}
                         />
                         <motion.aside
@@ -190,7 +189,7 @@ export function Sidebar({ user }: SidebarProps) {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25 }}
-                            className="lg:hidden fixed inset-y-0 left-0 w-64 backdrop-blur-xl bg-slate-900/95 border-r border-white/10 z-50"
+                            className="lg:hidden fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 shadow-2xl"
                         >
                             <SidebarContent />
                         </motion.aside>

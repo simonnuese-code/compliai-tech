@@ -9,7 +9,9 @@ import {
     CheckCircle,
     Clock,
     FileText,
-    Download
+    Download,
+    AlertTriangle,
+    ArrowRight
 } from 'lucide-react'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { cn } from '@/lib/utils'
@@ -53,79 +55,77 @@ export default async function CheckPage() {
                 </Link>
             </div>
 
-            {hasNoChecks ? (
+            {checks.length === 0 ? (
                 <GlassCard padding="lg">
                     <EmptyState
                         icon={FileText}
-                        title="Noch keine Checks durchgeführt"
-                        description="Starten Sie Ihren ersten Compliance Check und erhalten Sie eine detaillierte Bewertung Ihres KI-Systems."
+                        title="Keine Checks gefunden"
+                        description="Starten Sie Ihren ersten Compliance Check, um Risiken zu identifizieren."
                         action={
                             <Link href="/dashboard/check/new">
-                                <Button size="lg">
-                                    Ersten Check starten
+                                <Button className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
+                                    Jetzt starten
                                 </Button>
                             </Link>
                         }
                     />
                 </GlassCard>
             ) : (
-                <div className="space-y-4">
+                <div className="grid gap-4">
                     {checks.map((check) => (
-                        <GlassCard key={check.id} padding="lg" hover>
-                            <Link href={`/dashboard/check/${check.id}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn(
-                                            "w-12 h-12 rounded-xl flex items-center justify-center",
-                                            check.status === 'COMPLETED'
-                                                ? "bg-emerald-500/20"
-                                                : "bg-amber-500/20"
-                                        )}>
-                                            {check.status === 'COMPLETED' ? (
-                                                <CheckCircle className="w-6 h-6 text-emerald-400" />
-                                            ) : (
-                                                <Clock className="w-6 h-6 text-amber-400" />
+                        <GlassCard key={check.id} padding="md" hover>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className={cn(
+                                        "p-3 rounded-xl",
+                                        check.status === 'COMPLETED'
+                                            ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                            : "bg-amber-50 text-amber-600 border border-amber-100"
+                                    )}>
+                                        {check.status === 'COMPLETED' ? (
+                                            <CheckCircle className="w-6 h-6" />
+                                        ) : (
+                                            <AlertTriangle className="w-6 h-6" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-slate-900">
+                                            Compliance Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
+                                        </h3>
+                                        <div className="flex items-center gap-4 mt-1">
+                                            <span className="text-sm text-slate-500">
+                                                ID: {check.id.slice(0, 8)}...
+                                            </span>
+                                            {check.overallScore && (
+                                                <span className="text-sm font-medium text-slate-700">
+                                                    Score: {check.overallScore}/100
+                                                </span>
+                                            )}
+                                            {check.riskLevel && (
+                                                <Badge
+                                                    variant={check.riskLevel === 'HIGH' || check.riskLevel === 'UNACCEPTABLE' ? 'destructive' : 'outline'}
+                                                    className={cn(
+                                                        check.riskLevel === 'MINIMAL' && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                                        check.riskLevel === 'LIMITED' && "bg-amber-50 text-amber-700 border-amber-200",
+                                                        check.riskLevel === 'HIGH' && "bg-red-50 text-red-700 border-red-200",
+                                                    )}
+                                                >
+                                                    {check.riskLevel}
+                                                </Badge>
                                             )}
                                         </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-white">
-                                                Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
-                                            </h3>
-                                            <div className="flex items-center gap-3 mt-1">
-                                                <span className="text-sm text-gray-400">
-                                                    Score: {check.overallScore || 'N/A'}/100
-                                                </span>
-                                                {check.riskLevel && (
-                                                    <Badge
-                                                        variant={check.riskLevel === 'HIGH' || check.riskLevel === 'UNACCEPTABLE' ? 'destructive' : 'outline'}
-                                                        className={cn(
-                                                            check.riskLevel === 'MINIMAL' && "text-emerald-400 border-emerald-400/50",
-                                                            check.riskLevel === 'LIMITED' && "text-amber-400 border-amber-400/50",
-                                                        )}
-                                                    >
-                                                        {check.riskLevel}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                        {check.status === 'COMPLETED' && (
-                                            <Button variant="ghost" size="sm">
-                                                <Download className="w-4 h-4 mr-2" />
-                                                PDF
-                                            </Button>
-                                        )}
-                                        <Badge variant={
-                                            check.status === 'COMPLETED' ? 'default' : 'secondary'
-                                        }>
-                                            {check.status === 'COMPLETED' ? 'Abgeschlossen' : 'In Bearbeitung'}
-                                        </Badge>
                                     </div>
                                 </div>
-                            </Link>
+
+                                <div className="flex items-center gap-2">
+                                    <Link href={`/dashboard/check/${check.id}`}>
+                                        <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100">
+                                            Details
+                                            <ArrowRight className="w-4 h-4 ml-2" />
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
                         </GlassCard>
                     ))}
                 </div>
