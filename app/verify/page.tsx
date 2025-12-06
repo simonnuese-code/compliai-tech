@@ -1,7 +1,5 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -52,44 +50,44 @@ function VerifyContent() {
     }
 
     return (
-        <Card className="w-full max-w-md">
-            <CardHeader>
-                <CardTitle>Email Verifizierung</CardTitle>
-                <CardDescription>
-                    Wir haben einen 6-stelligen Code an <strong>{email}</strong> gesendet.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleVerify} className="space-y-4">
-                    <div>
-                        <Input
-                            type="text"
-                            placeholder="123456"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            maxLength={6}
-                            className="text-center text-2xl tracking-widest"
-                            required
-                        />
-                    </div>
-                    {error && (
-                        <p className="text-sm text-red-600">{error}</p>
-                    )}
-                    <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
-                        {loading ? 'Prüfe...' : 'Verifizieren'}
-                    </Button>
-                </form>
-            </CardContent>
-        </Card>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle>Email Verifizierung</CardTitle>
+                    <CardDescription>
+                        Wir haben einen 6-stelligen Code an <strong>{email}</strong> gesendet.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleVerify} className="space-y-4">
+                        <div>
+                            <Input
+                                type="text"
+                                placeholder="123456"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                maxLength={6}
+                                className="text-center text-2xl tracking-widest"
+                                required
+                            />
+                        </div>
+                        {error && (
+                            <p className="text-sm text-red-600">{error}</p>
+                        )}
+                        <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
+                            {loading ? 'Prüfe...' : 'Verifizieren'}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 
 export default function VerifyPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-            <Suspense fallback={<div>Lade Verifizierung...</div>}>
-                <VerifyContent />
-            </Suspense>
-        </div>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <VerifyContent />
+        </Suspense>
     )
 }
