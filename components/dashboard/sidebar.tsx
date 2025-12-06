@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -64,13 +65,28 @@ export function Sidebar({ user }: SidebarProps) {
                     animate={{ opacity: 1 }}
                     className="flex items-center gap-3"
                 >
-                    {!collapsed && (
-                        <>
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-md shadow-cyan-500/20">
-                                <span className="text-white font-bold">C</span>
-                            </div>
-                            <span className="text-xl font-bold text-slate-900">CompliAI</span>
-                        </>
+                    {!collapsed ? (
+                        <div className="relative h-8 w-40">
+                            <Image
+                                src="/compliai-logo-full.png?v=3"
+                                alt="CompliAI"
+                                fill
+                                className="object-contain object-left"
+                                priority
+                                unoptimized
+                            />
+                        </div>
+                    ) : (
+                        <div className="relative h-8 w-8 mx-auto">
+                            <Image
+                                src="/compliai-logo-icon.png"
+                                alt="CompliAI"
+                                fill
+                                className="object-contain"
+                                priority
+                                unoptimized
+                            />
+                        </div>
                     )}
                     <button
                         onClick={() => setCollapsed(!collapsed)}
