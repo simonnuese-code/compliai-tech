@@ -18,6 +18,127 @@ model User {
   emailVerified          DateTime?
   verificationToken      String?
   verificationTokenExpiry DateTime?
+  
+  // Neue Felder
+  company     String?
+  role        String?
+  onboarded   Boolean @default(false)
+
+  // Relations
+  checks      ComplianceCheck[]
+  tasks       Task[]
+  documents   Document[]
+
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
+}
+
+model ComplianceCheck {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Check Details
+  status            CheckStatus @default(IN_PROGRESS)
+  riskLevel         RiskLevel?
+  completedAt       DateTime?
+  
+  // Scores
+  overallScore      Int? // 0-100
+  documentationScore Int?
+  technicalScore    Int?
+  governanceScore   Int?
+  
+  // Data
+  answers           Json // Fragebogen-Antworten
+  recommendations   Json? // AI-generierte Empfehlungen
+  
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  tasks             Task[]
+  documents         Document[]
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum CheckStatus {
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum RiskLevel {
+  MINIMAL
+  LIMITED
+  HIGH
+  UNACCEPTABLE
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  status      TaskStatus @default(OPEN)
+  priority    Priority @default(MEDIUM)
+  dueDate     DateTime?
+  
+  // Verknüpfung zu Check
+  checkId     String?
+  check       ComplianceCheck? @relation(fields: [checkId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  type        DocumentType
+  content     String? // Markdown oder JSON
+  fileUrl     String? // Falls Upload
+  version     Int @default(1)
+  
+  checkId     String?
+  check       ComplianceCheck? @relation(fields: [checkId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([type])
+}
+
+enum DocumentType {
+  AI_SYSTEM_CARD
+  RISK_ASSESSMENT
+  DATA_GOVERNANCE
+  TECHNICAL_DOCS
+  COMPLIANCE_REPORT
+  OTHER
 }
