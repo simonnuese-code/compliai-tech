@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 // Validation Schema
 const createCheckSchema = z.object({
-  answers: z.record(z.any())
+  answers: z.record(z.string(), z.any())
 })
 
 // POST - Create new check
