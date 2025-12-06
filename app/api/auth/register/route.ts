@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const registerSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
   password: z.string().min(10, "Passwort muss mindestens 10 Zeichen lang sein"),

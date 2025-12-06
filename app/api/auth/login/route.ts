@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const loginSchema = z.object({
   email: z.string(),
   password: z.string(),

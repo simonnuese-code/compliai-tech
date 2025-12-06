@@ -51,7 +51,13 @@ const sliderPoints = [
   }
 ]
 
-export default function TrustSection() {
+import { TrustContent } from '@/lib/types/landing'
+
+interface TrustSectionProps {
+  content?: TrustContent
+}
+
+export default function TrustSection({ content }: TrustSectionProps) {
   const { ref, isInView } = useScrollAnimation()
   const [activeIndex, setActiveIndex] = useState(3) // Start at first feature (index 3)
   const [isDragging, setIsDragging] = useState(false)
