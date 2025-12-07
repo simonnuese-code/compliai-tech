@@ -59,11 +59,11 @@ export function Sidebar({ user }: SidebarProps) {
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
             {/* Logo */}
-            <div className="p-6 border-b border-slate-100">
+            <div className={cn("p-6 border-b border-slate-100", collapsed && "px-2 py-4")}>
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex items-center gap-3"
+                    className={cn("flex items-center gap-3", collapsed && "flex-col gap-4")}
                 >
                     {!collapsed ? (
                         <div className="relative h-10 w-48">
@@ -77,7 +77,7 @@ export function Sidebar({ user }: SidebarProps) {
                             />
                         </div>
                     ) : (
-                        <div className="relative h-8 w-8 mx-auto">
+                        <div className="relative h-8 w-8">
                             <Image
                                 src="/compliai-logo-icon.png"
                                 alt="CompliAI"
@@ -90,7 +90,10 @@ export function Sidebar({ user }: SidebarProps) {
                     )}
                     <button
                         onClick={() => setCollapsed(!collapsed)}
-                        className="ml-auto p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        className={cn(
+                            "p-2 hover:bg-slate-100 rounded-lg transition-colors",
+                            !collapsed && "ml-auto"
+                        )}
                     >
                         <ChevronLeft className={cn(
                             "w-5 h-5 text-slate-400 transition-transform",
