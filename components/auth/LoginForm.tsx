@@ -84,7 +84,15 @@ export function LoginForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="text-slate-700">Passwort</Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="password" className="text-slate-700">Passwort</Label>
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-sm text-cyan-600 hover:text-cyan-700 font-medium hover:underline transition-colors"
+                                >
+                                    Passwort vergessen?
+                                </Link>
+                            </div>
                             <Input
                                 id="password"
                                 type="password"

@@ -18,6 +18,8 @@ model User {
   emailVerified          DateTime?
   verificationToken      String?
   verificationTokenExpiry DateTime?
+  resetToken             String?
+  resetTokenExpiry       DateTime?
   
   // Neue Felder
   company     String?
