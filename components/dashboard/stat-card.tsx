@@ -32,7 +32,10 @@ export function StatCard({ title, value, icon, trend, color = 'blue' }: StatCard
                     <motion.p
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-3xl font-bold text-slate-900 mt-2"
+                        className={cn(
+                            "font-bold text-slate-900 mt-2",
+                            typeof value === 'string' && value.length > 8 ? "text-2xl" : "text-3xl"
+                        )}
                     >
                         {value}
                     </motion.p>

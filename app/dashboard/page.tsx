@@ -99,9 +99,14 @@ export default async function DashboardPage() {
                 />
                 <StatCard
                     title="Risikostufe"
-                    value={latestChecks[0]?.riskLevel || "N/A"}
+                    value={latestChecks[0]?.riskLevel ? (
+                        latestChecks[0].riskLevel === 'MINIMAL' ? 'Minimal' :
+                            latestChecks[0].riskLevel === 'LIMITED' ? 'Begrenzt' :
+                                latestChecks[0].riskLevel === 'HIGH' ? 'Hoch' :
+                                    latestChecks[0].riskLevel === 'UNACCEPTABLE' ? 'Unzulässig' : 'Unbekannt'
+                    ) : "N/A"}
                     icon={<AlertTriangle className="w-6 h-6 text-red-600" />}
-                    color={latestChecks[0]?.riskLevel === 'HIGH' ? 'red' : 'green'}
+                    color={latestChecks[0]?.riskLevel === 'HIGH' || latestChecks[0]?.riskLevel === 'UNACCEPTABLE' ? 'red' : 'green'}
                 />
             </div>
 
