@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2, CheckCircle } from "lucide-react";
 
 const registerSchema = z.object({
     name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein."),
@@ -26,7 +26,23 @@ type RegisterValues = z.infer<typeof registerSchema>;
 export function RegisterForm() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [checkAnswers, setCheckAnswers] = useState<Record<string, any> | null>(null);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const fromTest = searchParams.get('from') === 'test';
+
+    useEffect(() => {
+        if (fromTest) {
+            const saved = localStorage.getItem('compliai_check_final');
+            if (saved) {
+                try {
+                    setCheckAnswers(JSON.parse(saved));
+                } catch (e) {
+                    console.error('Failed to parse check answers', e);
+                }
+            }
+        }
+    }, [fromTest]);
 
     const {
         register,
@@ -48,6 +64,7 @@ export function RegisterForm() {
                     email: data.email,
                     password: data.password,
                     name: data.name,
+                    checkAnswers: checkAnswers // Send answers if present
                 }),
             });
 
@@ -56,10 +73,18 @@ export function RegisterForm() {
                 throw new Error(result.message || "Ein Fehler ist aufgetreten.");
             }
 
+            const result = await response.json();
+
+            // Clear local storage if check was submitted
+            if (checkAnswers) {
+                localStorage.removeItem('compliai_check_final');
+                localStorage.removeItem('compliai_check_draft');
+            }
+
             // Redirect to verification page
             router.push(`/verify?email=${encodeURIComponent(data.email)}`)
-        } catch (error) {
-            setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.")
+        } catch (error: any) {
+            setError(error.message || "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.")
         } finally {
             setIsLoading(false)
         }
@@ -67,6 +92,16 @@ export function RegisterForm() {
 
     return (
         <div className="w-full max-w-md mx-auto">
+            {fromTest && checkAnswers && (
+                <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-start gap-3 backdrop-blur-sm">
+                    <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-semibold">Check erfolgreich abgeschlossen!</p>
+                        <p className="text-sm opacity-90">Registrieren Sie sich jetzt, um Ihre detaillierte Auswertung zu sehen.</p>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-[#0f172a] rounded-2xl p-8 md:p-10 shadow-2xl shadow-blue-900/20 border border-white/10 backdrop-blur-sm relative overflow-hidden">
                 {/* Background Glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-blue-500/5 to-transparent opacity-30 pointer-events-none" />

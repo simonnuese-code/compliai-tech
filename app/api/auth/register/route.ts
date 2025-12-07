@@ -3,6 +3,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { sendVerificationEmail } from '@/lib/email'
+import { calculateOverallScore, calculateRiskLevel, generateRecommendations } from '@/lib/scoring'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(10),
   name: z.string().min(1),
+  checkAnswers: z.record(z.any()).optional(), // Optional answers from landing page test
 })
 
 // Generiere 6-stelligen Code
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, password, name } = result.data
+    const { email, password, name, checkAnswers } = result.data
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000) // 15 Min
 
     // User erstellen OHNE emailVerified
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
@@ -56,6 +58,30 @@ export async function POST(request: NextRequest) {
         verificationTokenExpiry,
       },
     })
+
+    // Wenn Check-Antworten vorhanden sind, erstelle den Check
+    let checkId = null
+    if (checkAnswers) {
+      const scores = calculateOverallScore(checkAnswers)
+      const riskLevel = calculateRiskLevel(scores.overallScore, checkAnswers)
+      const recommendations = generateRecommendations(checkAnswers, riskLevel)
+
+      const check = await prisma.complianceCheck.create({
+        data: {
+          userId: user.id,
+          answers: checkAnswers,
+          overallScore: scores.overallScore,
+          documentationScore: scores.documentationScore,
+          technicalScore: scores.technicalScore,
+          governanceScore: scores.governanceScore,
+          riskLevel: riskLevel,
+          recommendations: recommendations as any, // Cast to any for Json type
+          status: 'COMPLETED',
+          completedAt: new Date()
+        }
+      })
+      checkId = check.id
+    }
 
     // Email senden
     const emailResult = await sendVerificationEmail(email, verificationCode, name)
@@ -70,6 +96,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: 'Registrierung erfolgreich. Bitte prüfe deine Emails.',
       email, // Für Redirect zur Verify-Seite
+      checkId // Optional: ID des erstellten Checks
     })
   } catch (error) {
     console.error('Registration error:', error)

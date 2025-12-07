@@ -98,7 +98,7 @@ export default function CTASection({ content }: CTASectionProps) {
               asChild
               className="bg-white text-slate-900 hover:bg-slate-100 border-0 px-8 h-12 text-base font-bold rounded-full w-full sm:w-auto transition-all hover:scale-[1.01]"
             >
-              <Link href="/questionnaire" className="inline-flex items-center gap-2">
+              <Link href="/test" className="inline-flex items-center gap-2">
                 {primaryBtn}
                 <ArrowRight className="w-4 h-4 text-slate-600" />
               </Link>

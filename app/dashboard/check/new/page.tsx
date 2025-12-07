@@ -1,76 +1,14 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { GlassCard } from '@/components/ui/glass-card'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-
-// Fragebogen-Daten
-const questionnaireSteps = [
-    {
-        title: "Allgemeine Informationen",
-        questions: [
-            {
-                id: 'ai_purpose',
-                question: 'Was ist der Hauptzweck Ihres KI-Systems?',
-                type: 'textarea',
-                required: true
-            },
-            {
-                id: 'ai_users',
-                question: 'Wer sind die Hauptnutzer des Systems?',
-                type: 'select',
-                options: ['Endverbraucher', 'Unternehmen (B2B)', 'Interne Mitarbeiter', 'Öffentliche Verwaltung'],
-                required: true
-            }
-        ]
-    },
-    {
-        title: "Daten & Training",
-        questions: [
-            {
-                id: 'data_source',
-                question: 'Woher stammen die Trainingsdaten?',
-                type: 'select',
-                options: ['Öffentlich verfügbar', 'Intern generiert', 'Gekauft / Lizenziert', 'Nutzerdaten'],
-                required: true
-            },
-            {
-                id: 'personal_data',
-                question: 'Werden personenbezogene Daten verarbeitet?',
-                type: 'select',
-                options: ['Ja, sensibel (Gesundheit, Biometrie)', 'Ja, allgemein (Name, Email)', 'Nein, nur anonymisiert', 'Nein, gar nicht'],
-                required: true
-            }
-        ]
-    }
-]
+import QuestionnaireWizard from '@/components/questionnaire/questionnaire-wizard'
+import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export default function NewCheckPage() {
     const router = useRouter()
-    const [currentStep, setCurrentStep] = useState(0)
-    const [answers, setAnswers] = useState<Record<string, any>>({})
-    const [loading, setLoading] = useState(false)
 
-    const totalSteps = questionnaireSteps.length
-    const progress = ((currentStep + 1) / totalSteps) * 100
-
-    const handleNext = () => {
-        if (currentStep < totalSteps - 1) {
-            setCurrentStep(current => current + 1)
-        }
-    }
-
-    const handlePrevious = () => {
-        if (currentStep > 0) {
-            setCurrentStep(current => current - 1)
-        }
-    }
-
-    const handleSubmit = async () => {
-        setLoading(true)
+    const handleComplete = async (answers: Record<string, any>) => {
         try {
             const res = await fetch('/api/checks', {
                 method: 'POST',
@@ -86,93 +24,32 @@ export default function NewCheckPage() {
         } catch (error) {
             console.error('Submit error:', error)
         }
-        setLoading(false)
     }
 
-    const currentStepData = questionnaireSteps[currentStep]
-
     return (
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="space-y-8">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                    Neuer Compliance Check
-                </h1>
-                <p className="text-slate-500">
-                    Schritt {currentStep + 1} von {totalSteps}
-                </p>
-            </div>
-
-            {/* Progress */}
-            <Progress value={progress} className="h-2 bg-slate-100" indicatorClassName="bg-gradient-to-r from-cyan-500 to-blue-500" />
-
-            {/* Questions */}
-            <GlassCard padding="lg">
-                <h2 className="text-2xl font-semibold text-slate-900 mb-6">
-                    {currentStepData.title}
-                </h2>
-
-                <div className="space-y-6">
-                    {currentStepData.questions.map((q) => (
-                        <div key={q.id}>
-                            <label className="block text-slate-900 font-medium mb-2">
-                                {q.question}
-                                {q.required && <span className="text-red-500 ml-1">*</span>}
-                            </label>
-
-                            {q.type === 'textarea' && (
-                                <textarea
-                                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all shadow-sm"
-                                    rows={4}
-                                    value={answers[q.id] || ''}
-                                    onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                                    placeholder="Ihre Antwort..."
-                                />
-                            )}
-
-                            {q.type === 'select' && (
-                                <select
-                                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all shadow-sm"
-                                    value={answers[q.id] || ''}
-                                    onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                                >
-                                    <option value="">Bitte wählen...</option>
-                                    {q.options?.map(option => (
-                                        <option key={option} value={option}>{option}</option>
-                                    ))}
-                                </select>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </GlassCard>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
-                <Button
-                    variant="ghost"
-                    onClick={handlePrevious}
-                    disabled={currentStep === 0}
+            <div className="flex items-center gap-4">
+                <Link
+                    href="/dashboard/check"
+                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5 mr-2" />
-                    Zurück
-                </Button>
-
-                {currentStep === totalSteps - 1 ? (
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        size="lg"
-                    >
-                        {loading ? 'Wird analysiert...' : 'Check abschließen'}
-                    </Button>
-                ) : (
-                    <Button onClick={handleNext} size="lg">
-                        Weiter
-                        <ChevronRight className="w-5 h-5 ml-2" />
-                    </Button>
-                )}
+                    <ArrowLeft className="w-5 h-5 text-slate-500" />
+                </Link>
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                        Neuer Compliance Check
+                    </h1>
+                    <p className="text-slate-500">
+                        Führen Sie eine vollständige Bewertung Ihres KI-Systems durch
+                    </p>
+                </div>
             </div>
+
+            <QuestionnaireWizard
+                mode="dashboard"
+                onComplete={handleComplete}
+            />
         </div>
     )
 }

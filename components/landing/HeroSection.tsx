@@ -70,7 +70,7 @@ export default function HeroSection({ content }: HeroSectionProps) {
               size="lg"
               className="px-10 py-7 text-xl group font-bold w-full sm:w-auto rounded-full shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 border-0 text-white hover:scale-105"
             >
-              <Link href="/questionnaire" className="inline-flex items-center gap-2">
+              <Link href="/test" className="inline-flex items-center gap-2">
                 {content.ctaPrimary}
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
               </Link>
