@@ -14,6 +14,7 @@ import { Loader2, CheckCircle } from "lucide-react";
 const registerSchema = z.object({
     name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein."),
     email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein."),
+    company: z.string().min(2, "Unternehmen muss mindestens 2 Zeichen lang sein."),
     password: z.string().min(10, "Passwort muss mindestens 10 Zeichen lang sein."),
     confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -64,6 +65,7 @@ export function RegisterForm() {
                     email: data.email,
                     password: data.password,
                     name: data.name,
+                    company: data.company,
                     checkAnswers: checkAnswers // Send answers if present
                 }),
             });
@@ -140,6 +142,20 @@ export function RegisterForm() {
                             />
                             {errors.email && (
                                 <p className="text-sm text-rose-500">{errors.email.message}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="company" className="text-slate-300">Unternehmen</Label>
+                            <Input
+                                id="company"
+                                type="text"
+                                placeholder="Ihr Unternehmen GmbH"
+                                className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-blue-500/20"
+                                {...register("company")}
+                            />
+                            {errors.company && (
+                                <p className="text-sm text-rose-500">{errors.company.message}</p>
                             )}
                         </div>
 

@@ -11,6 +11,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(10),
   name: z.string().min(1),
+  company: z.string().min(1),
   checkAnswers: z.record(z.string(), z.any()).optional(), // Optional answers from landing page test
 })
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, password, name, checkAnswers } = result.data
+    const { email, password, name, company, checkAnswers } = result.data
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
         email,
         passwordHash,
         name,
+        company,
         verificationToken: verificationCode,
         verificationTokenExpiry,
       },
