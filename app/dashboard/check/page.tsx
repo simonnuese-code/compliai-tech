@@ -1,7 +1,7 @@
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { GlassCard } from '@/components/ui/glass-card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import {
@@ -73,63 +73,63 @@ export default async function CheckPage() {
             ) : (
                 <div className="grid gap-4">
                     {checks.map((check) => (
-                        <GlassCard key={check.id} padding="md" hover>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className={cn(
-                                        "p-3 rounded-xl",
-                                        check.status === 'COMPLETED'
-                                            ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                            : "bg-amber-50 text-amber-600 border border-amber-100"
-                                    )}>
-                                        {check.status === 'COMPLETED' ? (
-                                            <CheckCircle className="w-6 h-6" />
-                                        ) : (
-                                            <AlertTriangle className="w-6 h-6" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-slate-900">
-                                            Compliance Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
-                                        </h3>
-                                        <div className="flex items-center gap-4 mt-1">
-                                            <span className="text-sm text-slate-500">
-                                                ID: {check.id.slice(0, 8)}...
-                                            </span>
-                                            {check.overallScore && (
-                                                <span className="text-sm font-medium text-slate-700">
-                                                    Score: {check.overallScore}/100
+                        <Link key={check.id} href={`/dashboard/check/${check.id}`} className="block group">
+                            <GlassCard padding="md" hover>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "p-3 rounded-xl",
+                                            check.status === 'COMPLETED'
+                                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                                : "bg-amber-50 text-amber-600 border border-amber-100"
+                                        )}>
+                                            {check.status === 'COMPLETED' ? (
+                                                <CheckCircle className="w-6 h-6" />
+                                            ) : (
+                                                <AlertTriangle className="w-6 h-6" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-slate-900">
+                                                Compliance Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
+                                            </h3>
+                                            <div className="flex items-center gap-4 mt-1">
+                                                <span className="text-sm text-slate-500">
+                                                    ID: {check.id.slice(0, 8)}...
                                                 </span>
-                                            )}
-                                            {check.riskLevel && (
-                                                <Badge
-                                                    variant={check.riskLevel === 'HIGH' || check.riskLevel === 'UNACCEPTABLE' ? 'destructive' : 'outline'}
-                                                    className={cn(
-                                                        check.riskLevel === 'MINIMAL' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                                        check.riskLevel === 'LIMITED' && "bg-amber-50 text-amber-700 border-amber-200",
-                                                        check.riskLevel === 'HIGH' && "bg-red-50 text-red-700 border-red-200",
-                                                    )}
-                                                >
-                                                    {check.riskLevel === 'MINIMAL' ? 'Minimal' :
-                                                        check.riskLevel === 'LIMITED' ? 'Begrenzt' :
-                                                            check.riskLevel === 'HIGH' ? 'Hoch' :
-                                                                check.riskLevel === 'UNACCEPTABLE' ? 'Unzulässig' : check.riskLevel}
-                                                </Badge>
-                                            )}
+                                                {check.overallScore && (
+                                                    <span className="text-sm font-medium text-slate-700">
+                                                        Score: {check.overallScore}/100
+                                                    </span>
+                                                )}
+                                                {check.riskLevel && (
+                                                    <Badge
+                                                        variant={check.riskLevel === 'HIGH' || check.riskLevel === 'UNACCEPTABLE' ? 'destructive' : 'outline'}
+                                                        className={cn(
+                                                            check.riskLevel === 'MINIMAL' && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                                            check.riskLevel === 'LIMITED' && "bg-amber-50 text-amber-700 border-amber-200",
+                                                            check.riskLevel === 'HIGH' && "bg-red-50 text-red-700 border-red-200",
+                                                        )}
+                                                    >
+                                                        {check.riskLevel === 'MINIMAL' ? 'Minimal' :
+                                                            check.riskLevel === 'LIMITED' ? 'Begrenzt' :
+                                                                check.riskLevel === 'HIGH' ? 'Hoch' :
+                                                                    check.riskLevel === 'UNACCEPTABLE' ? 'Unzulässig' : check.riskLevel}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-slate-500 group-hover:text-slate-900 group-hover:bg-slate-100")}>
+                                            Details
+                                            <ArrowRight className="w-4 h-4 ml-2" />
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Link href={`/dashboard/check/${check.id}`}>
-                                        <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100">
-                                            Details
-                                            <ArrowRight className="w-4 h-4 ml-2" />
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </div>
-                        </GlassCard>
+                            </GlassCard>
+                        </Link>
                     ))}
                 </div>
             )}
