@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   title: "CompliAI - Don't just comply. Get your CompliAI",
   description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität. Kostenlos, sicher und sofort verfügbar.",
   icons: {
-    icon: '/compliai-logo-icon.png',
-    apple: '/compliai-logo-icon.png',
+    icon: '/compliai-logo-icon.png?v=4',
+    apple: '/compliai-logo-icon.png?v=4',
   },
   openGraph: {
     title: "CompliAI - Don't just comply. Get your CompliAI",
