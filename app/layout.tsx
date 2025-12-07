@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CompliAI - EU AI Act Compliance Co-Pilot",
-  description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität. Kostenlos & sicher.",
+  title: "CompliAI - Don't just comply. Get your CompliAI",
+  description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität. Kostenlos, sicher und sofort verfügbar.",
   icons: {
     icon: '/compliai-logo-icon.png',
     apple: '/compliai-logo-icon.png',
   },
   openGraph: {
-    title: "CompliAI - EU AI Act Compliance leicht gemacht",
-    description: "Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität mit dem EU AI Act. Starten Sie jetzt Ihren kostenlosen Check.",
+    title: "CompliAI - Don't just comply. Get your CompliAI",
+    description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität. Kostenlos, sicher und sofort verfügbar.",
     url: 'https://compliai.tech',
     siteName: 'CompliAI',
     images: [
@@ -37,8 +37,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "CompliAI - EU AI Act Compliance Co-Pilot",
-    description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance.",
+    title: "CompliAI - Don't just comply. Get your CompliAI",
+    description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität.",
     images: ['/compliai-logo-full.png'],
   },
 };
