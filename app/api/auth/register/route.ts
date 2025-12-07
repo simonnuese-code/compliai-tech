@@ -12,7 +12,7 @@ const registerSchema = z.object({
   password: z.string().min(10),
   name: z.string().min(1),
   company: z.string().min(1),
-  checkAnswers: z.record(z.string(), z.any()).optional(), // Optional answers from landing page test
+  checkAnswers: z.record(z.string(), z.any()).optional().nullable(), // Optional answers from landing page test
 })
 
 // Generiere 6-stelligen Code
