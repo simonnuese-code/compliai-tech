@@ -23,14 +23,14 @@ export default function HeroSection({ content }: HeroSectionProps) {
 
   return (
     <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20 hero-section z-20 shadow-[0_6px_36px_rgba(0,0,0,0.08)]">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 text-center">
+      <div className="max-w-5xl mx-auto px-6 md:px-6 lg:px-8 text-center">
         {/* Headline */}
         <div className="overflow-hidden mb-8">
           <motion.h1
             variants={headlineReveal}
             initial="initial"
             animate="animate"
-            className="text-[40px] md:text-[72px] font-extrabold leading-[1.1] tracking-tight text-slate-900 will-change-transform"
+            className="text-3xl md:text-[72px] font-extrabold leading-[1.1] tracking-tight text-slate-900 will-change-transform"
           >
             {headlineParts.length > 1 ? (
               <>
@@ -69,7 +69,7 @@ export default function HeroSection({ content }: HeroSectionProps) {
             <Button
               asChild
               size="lg"
-              className="px-10 py-7 text-xl group font-bold w-full sm:w-auto rounded-full shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 border-0 text-white hover:scale-105"
+              className="px-6 py-6 md:px-10 md:py-7 text-lg md:text-xl group font-bold w-full sm:w-auto rounded-full shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 border-0 text-white hover:scale-105"
             >
               <Link href="/test" className="inline-flex items-center gap-2">
                 {content.ctaPrimary}

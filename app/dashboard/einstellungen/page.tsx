@@ -101,7 +101,7 @@ export default async function EinstellungenPage() {
                 </div>
 
                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-6">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-1">
                                 Account löschen
@@ -111,7 +111,9 @@ export default async function EinstellungenPage() {
                                 Dies beinhaltet Ihr Profil, alle durchgeführten Compliance-Checks, gespeicherte Dokumente und Exporte.
                             </p>
                         </div>
-                        <DeleteAccountButton />
+                        <div className="flex-shrink-0 w-full md:w-auto">
+                            <DeleteAccountButton />
+                        </div>
                     </div>
                 </div>
             </GlassCard>

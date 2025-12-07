@@ -38,7 +38,7 @@ export default async function CheckPage() {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 mb-2">
                         Compliance Checks
@@ -47,8 +47,8 @@ export default async function CheckPage() {
                         Bewerten Sie Ihr KI-System gemäß EU AI Act
                     </p>
                 </div>
-                <Link href="/dashboard/check/new">
-                    <Button size="lg" className="group rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
+                <Link href="/dashboard/check/new" className="w-full md:w-auto">
+                    <Button size="lg" className="w-full md:w-auto group rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
                         <Plus className="w-5 h-5 mr-2" />
                         Neuer Check
                     </Button>
@@ -75,10 +75,10 @@ export default async function CheckPage() {
                     {checks.map((check) => (
                         <Link key={check.id} href={`/dashboard/check/${check.id}`} className="block group">
                             <GlassCard padding="md" hover>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div className="flex items-start md:items-center gap-4">
                                         <div className={cn(
-                                            "p-3 rounded-xl",
+                                            "p-3 rounded-xl flex-shrink-0",
                                             check.status === 'COMPLETED'
                                                 ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                                                 : "bg-amber-50 text-amber-600 border border-amber-100"
@@ -89,11 +89,11 @@ export default async function CheckPage() {
                                                 <AlertTriangle className="w-6 h-6" />
                                             )}
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-slate-900">
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg font-semibold text-slate-900 truncate pr-2">
                                                 Compliance Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
                                             </h3>
-                                            <div className="flex items-center gap-4 mt-1">
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
                                                 <span className="text-sm text-slate-500">
                                                     ID: {check.id.slice(0, 8)}...
                                                 </span>
@@ -121,7 +121,7 @@ export default async function CheckPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 md:self-center self-end">
                                         <div className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-slate-500 group-hover:text-slate-900 group-hover:bg-slate-100")}>
                                             Details
                                             <ArrowRight className="w-4 h-4 ml-2" />

@@ -41,16 +41,16 @@ export default async function DokumentationPage() {
                 {documents.length > 0 ? (
                     documents.map((doc) => (
                         <GlassCard key={doc.id} padding="md">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-100 text-cyan-600">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-start md:items-center gap-4">
+                                    <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-100 text-cyan-600 flex-shrink-0">
                                         <FileText className="w-6 h-6" />
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-slate-900">
+                                    <div className="min-w-0">
+                                        <h3 className="text-lg font-semibold text-slate-900 truncate pr-2">
                                             {doc.title}
                                         </h3>
-                                        <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1 text-sm text-slate-500">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
                                                 {new Date(doc.updatedAt).toLocaleDateString('de-DE')}
@@ -65,7 +65,7 @@ export default async function DokumentationPage() {
                                     </div>
                                 </div>
 
-                                <a href={`/api/checks/${doc.checkId}/export`} download>
+                                <a href={`/api/checks/${doc.checkId}/export`} download className="md:self-center self-end">
                                     <Button variant="outline" size="sm" className="gap-2">
                                         <Download className="w-4 h-4" />
                                         Download

@@ -70,38 +70,42 @@ export default async function AufgabenPage() {
             <div className="grid gap-4">
                 {recommendations.map((rec: any, index: number) => (
                     <GlassCard key={index} padding="md" className="group hover:border-cyan-200 transition-colors">
-                        <div className="flex items-start gap-4">
-                            <div className={cn(
-                                "mt-1 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border",
-                                rec.priority === 'HIGH' ? "bg-red-50 border-red-100 text-red-600" :
-                                    rec.priority === 'MEDIUM' ? "bg-amber-50 border-amber-100 text-amber-600" : "bg-blue-50 border-blue-100 text-blue-600"
-                            )}>
-                                <ListTodo className="w-4 h-4" />
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <h3 className="font-semibold text-slate-900 truncate pr-2">
-                                        {rec.title}
-                                    </h3>
-                                    <Badge variant="outline" className="text-xs bg-slate-50">
-                                        {rec.category}
-                                    </Badge>
-                                    <Badge variant="outline" className={cn(
-                                        "text-xs",
-                                        rec.priority === 'HIGH' ? "text-red-600 bg-red-50 border-red-200" :
-                                            rec.priority === 'MEDIUM' ? "text-amber-600 bg-amber-50 border-amber-200" : "text-blue-600 bg-blue-50 border-blue-200"
-                                    )}>
-                                        {rec.priority}
-                                    </Badge>
+                        <div className="flex flex-col md:flex-row md:items-start gap-4">
+                            <div className="flex items-start gap-4 flex-1 min-w-0">
+                                <div className={cn(
+                                    "mt-1 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border",
+                                    rec.priority === 'HIGH' ? "bg-red-50 border-red-100 text-red-600" :
+                                        rec.priority === 'MEDIUM' ? "bg-amber-50 border-amber-100 text-amber-600" : "bg-blue-50 border-blue-100 text-blue-600"
+                                )}>
+                                    <ListTodo className="w-4 h-4" />
                                 </div>
-                                <p className="text-slate-600 text-sm leading-relaxed">
-                                    {rec.description}
-                                </p>
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                        <h3 className="font-semibold text-slate-900 truncate pr-2 w-full md:w-auto">
+                                            {rec.title}
+                                        </h3>
+                                        <div className="flex gap-2">
+                                            <Badge variant="outline" className="text-xs bg-slate-50">
+                                                {rec.category}
+                                            </Badge>
+                                            <Badge variant="outline" className={cn(
+                                                "text-xs",
+                                                rec.priority === 'HIGH' ? "text-red-600 bg-red-50 border-red-200" :
+                                                    rec.priority === 'MEDIUM' ? "text-amber-600 bg-amber-50 border-amber-200" : "text-blue-600 bg-blue-50 border-blue-200"
+                                            )}>
+                                                {rec.priority}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-600 text-sm leading-relaxed">
+                                        {rec.description}
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Placeholder for future "Mark as done" functionality */}
-                            <div className="flex-shrink-0 self-center">
+                            <div className="flex-shrink-0 self-end md:self-center">
                                 <Button variant="ghost" size="icon" className="text-slate-300 hover:text-emerald-500 hover:bg-emerald-50">
                                     <CheckCircle2 className="w-6 h-6" />
                                 </Button>
