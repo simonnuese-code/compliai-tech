@@ -20,15 +20,10 @@ const plans = [
         features: [
             "Kostenloser AI Compliance Check",
             "Automatische Risikoklassifizierung",
-            "Compliance Dashboard",
-            "Compliance Score Visualisierung",
+            "Compliance Dashboard mit Compli-Score",
             "1 KI-System registrierbar",
             "Basis-Dokumentationsvorlagen",
-            "Monatliche Compliance-Updates",
-            "Email Support",
-            "Basis AI Assistant (100 Fragen/Monat)",
-            "Compliance-Checklisten",
-            "PDF-Export Ihres Compliance Reports"
+            "Email Support"
         ],
         highlight: false,
         cta: "Jetzt starten",
@@ -45,16 +40,11 @@ const plans = [
         features: [
             "Alles aus Starter, PLUS:",
             "Bis zu 5 KI-Systeme",
-            "Erweiterte Dokumentationsvorlagen (Annex IV)",
             "Automatischer Dokumentengenerator",
-            "Wöchentliche Compliance-Updates",
             "Prioritäts-Email & Chat Support",
             "Erweiterter AI Assistant (500 Fragen/Monat)",
             "Gesetzesänderungs-Alerts",
-            "Zugang zum Anwalts-Marktplatz",
-            "Team-Collaboration (bis zu 3 User)",
-            "Versionierung & Audit Trail",
-            "White-Label PDF Reports"
+            "Team-Collaboration (bis zu 3 User)"
         ],
         highlight: true,
         cta: "Jetzt starten",
@@ -71,17 +61,11 @@ const plans = [
         features: [
             "Alles aus Professional, PLUS:",
             "Unbegrenzte KI-Systeme",
-            "Komplette Dokumentations-Suite",
             "Dedizierter Customer Success Manager",
-            "Tägliche Compliance-Updates",
             "Priority Support (24h Response Time)",
             "Unbegrenzter AI Assistant",
             "NIS2 & CSRD Add-on Module inklusive",
-            "Team-Collaboration (unbegrenzt User)",
             "API-Zugang für Integrationen",
-            "Custom Compliance Roadmap",
-            "Quarterly Compliance Review Calls",
-            "Multi-Standort Support",
             "Advanced Analytics & Reporting"
         ],
         highlight: false,
@@ -100,15 +84,9 @@ const plans = [
             "Alles aus Business, PLUS:",
             "Maßgeschneiderte Lösung",
             "Dediziertes Account Management",
-            "On-Premise Deployment Option",
-            "Custom SLA",
             "White-Label Plattform",
-            "Integration Support",
             "Individuelle Schulungen",
-            "Mehrsprachiger Support",
-            "Custom Feature Development",
-            "Telefon-Hotline",
-            "Persönlicher Berater"
+            "Custom Feature Development"
         ],
         highlight: false,
         cta: "Kontakt aufnehmen",
@@ -293,7 +271,15 @@ export default function PricingPage() {
                                             ) : (
                                                 <>
                                                     <Check className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                                                    <span className="leading-tight">{feature}</span>
+                                                    <span className="leading-tight">
+                                                        {feature.includes("Compli-Score") ? (
+                                                            <>
+                                                                Compliance Dashboard mit <span className="text-sky-500 font-semibold">Compli</span>-Score
+                                                            </>
+                                                        ) : (
+                                                            feature
+                                                        )}
+                                                    </span>
                                                 </>
                                             )}
                                         </li>
@@ -345,20 +331,27 @@ export default function PricingPage() {
 
             {/* Final CTA */}
             <div className="text-center mb-12">
-                <GlassCard className="max-w-4xl mx-auto bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700" padding="lg">
-                    <div className="py-8">
-                        <h2 className="text-3xl font-bold text-white mb-4">Bereit loszulegen?</h2>
-                        <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
+                <div className="relative max-w-4xl mx-auto rounded-3xl bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden shadow-2xl">
+                    {/* Top Glow */}
+                    <div
+                        className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/3 blur-3xl opacity-20 pointer-events-none"
+                        style={{
+                            background: 'radial-gradient(ellipse at center, #0ea5e9 0%, transparent 70%)'
+                        }}
+                    />
+
+                    <div className="relative z-10 py-16 px-8 text-center">
+                        <h2 className="text-4xl font-bold text-white mb-4">Bereit loszulegen?</h2>
+                        <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
                             Starten Sie Ihren kostenlosen Compliance Check in weniger als 5 Minuten.
-                            Keine Kreditkarte erforderlich.
                         </p>
                         <Link href="/register">
-                            <Button size="lg" className="rounded-full px-8 h-14 text-lg bg-white text-slate-900 hover:bg-slate-100 border-0">
+                            <Button size="lg" className="rounded-full px-8 h-14 text-lg bg-white text-slate-900 hover:bg-slate-100 border-0 font-semibold transition-all hover:scale-105">
                                 Jetzt kostenlos testen
                             </Button>
                         </Link>
                     </div>
-                </GlassCard>
+                </div>
             </div>
         </div>
     )

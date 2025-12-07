@@ -66,15 +66,16 @@ export default function Navigation({ user }: NavigationProps) {
             </div>
           </Link>
 
-          {/* Middle: Navigation Links */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Preise
-            </Link>
-          </div>
-
           {/* Right: Auth Buttons */}
           <div className="flex items-center gap-4">
+            {/* Pricing Button - Desktop */}
+            <div className="hidden md:block mr-2">
+              <Link href="/pricing">
+                <button className="px-5 py-2 rounded-full border border-slate-300/50 text-slate-700 font-medium hover:bg-white/10 hover:border-slate-400/70 transition-all duration-200 text-sm">
+                  Preise
+                </button>
+              </Link>
+            </div>
             {user ? (
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-slate-600 hidden md:block">
