@@ -17,7 +17,8 @@ import {
     LogOut,
     Menu,
     X,
-    ChevronLeft
+    ChevronLeft,
+    ArrowLeft
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -66,7 +67,7 @@ export function Sidebar({ user }: SidebarProps) {
                     className={cn("flex items-center gap-3", collapsed && "flex-col gap-4")}
                 >
                     {!collapsed ? (
-                        <div className="relative h-10 w-48">
+                        <Link href="/" className="relative h-10 w-48 block transition-opacity hover:opacity-80">
                             <Image
                                 src="/compliai-logo-transparent.png"
                                 alt="CompliAI"
@@ -75,9 +76,9 @@ export function Sidebar({ user }: SidebarProps) {
                                 priority
                                 unoptimized
                             />
-                        </div>
+                        </Link>
                     ) : (
-                        <div className="relative h-8 w-8">
+                        <Link href="/" className="relative h-8 w-8 block transition-opacity hover:opacity-80">
                             <Image
                                 src="/compliai-logo-icon.png"
                                 alt="CompliAI"
@@ -86,7 +87,7 @@ export function Sidebar({ user }: SidebarProps) {
                                 priority
                                 unoptimized
                             />
-                        </div>
+                        </Link>
                     )}
                     <button
                         onClick={() => setCollapsed(!collapsed)}
@@ -140,6 +141,13 @@ export function Sidebar({ user }: SidebarProps) {
             <div className="p-4 border-t border-slate-100">
                 {!collapsed ? (
                     <div className="space-y-3">
+                        <Link
+                            href="/"
+                            className="w-full flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-900 mb-2"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="text-sm font-medium">Zur Startseite</span>
+                        </Link>
                         <div className="px-4 py-3 rounded-xl bg-slate-50 border border-slate-100">
                             <p className="text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent truncate">{user.name || 'User'}</p>
                             <p className="text-xs text-slate-500 truncate">{user.email}</p>
@@ -153,12 +161,21 @@ export function Sidebar({ user }: SidebarProps) {
                         </button>
                     </div>
                 ) : (
-                    <button
-                        onClick={handleLogout}
-                        className="w-full p-3 rounded-xl hover:bg-slate-50 transition-colors"
-                    >
-                        <LogOut className="w-5 h-5 text-slate-400 mx-auto" />
-                    </button>
+                    <div className="space-y-3">
+                        <Link
+                            href="/"
+                            className="w-full p-3 rounded-xl hover:bg-slate-50 transition-colors flex justify-center"
+                            title="Zur Startseite"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-slate-400" />
+                        </Link>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full p-3 rounded-xl hover:bg-slate-50 transition-colors"
+                        >
+                            <LogOut className="w-5 h-5 text-slate-400 mx-auto" />
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
