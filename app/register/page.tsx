@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import Navigation from "@/components/landing/Navigation";
 
@@ -10,7 +11,9 @@ export default function RegisterPage() {
             <Navigation />
 
             <main className="pt-32 pb-12 px-4 flex items-center justify-center min-h-[calc(100vh-80px)]">
-                <RegisterForm />
+                <Suspense fallback={<div className="text-center text-slate-500">Laden...</div>}>
+                    <RegisterForm />
+                </Suspense>
             </main>
         </div>
     );
