@@ -71,6 +71,7 @@ export function RegisterForm() {
             });
 
             if (!response.ok) {
+                const result = await response.json();
                 let errorMessage = result.error || result.message || "Ein Fehler ist aufgetreten.";
                 if (result.details?.fieldErrors) {
                     const details = Object.entries(result.details.fieldErrors)
