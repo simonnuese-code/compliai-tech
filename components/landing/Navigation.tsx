@@ -70,11 +70,14 @@ export default function Navigation({ user }: NavigationProps) {
           <div className="flex items-center gap-4">
             {/* Pricing Button - Desktop */}
             <div className="hidden md:block mr-2">
-              <Link href="/pricing">
-                <button className="px-6 py-2.5 rounded-full border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all duration-200 text-sm">
+              <Button
+                asChild
+                className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-6"
+              >
+                <Link href="/pricing">
                   Preise
-                </button>
-              </Link>
+                </Link>
+              </Button>
             </div>
             {user ? (
               <div className="flex items-center gap-4">
