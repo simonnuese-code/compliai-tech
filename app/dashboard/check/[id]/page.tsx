@@ -181,7 +181,7 @@ export default async function CheckResultPage({ params }: CheckResultPageProps) 
 
                 {recommendations.length > 0 ? (
                     <div className="space-y-4">
-                        {recommendations.map((rec, index) => (
+                        {recommendations.map((rec: any, index) => (
                             <div
                                 key={index}
                                 className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex gap-4"
