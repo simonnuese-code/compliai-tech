@@ -213,7 +213,7 @@ export default async function DashboardPage() {
                             </Link>
 
                             <Link
-                                href="/dashboard/berichte"
+                                href="/dashboard/dokumentation"
                                 className="block p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
