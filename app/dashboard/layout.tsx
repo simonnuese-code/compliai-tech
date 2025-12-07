@@ -31,7 +31,7 @@ export default async function DashboardLayout({
             <div className="flex">
                 <Sidebar user={user} />
                 <main className="flex-1 lg:pl-0 pl-0 relative">
-                    <div className="absolute top-6 right-6 z-10 hidden lg:block">
+                    <div className="absolute top-10 right-10 z-10 hidden lg:block">
                         <ThemeToggle />
                     </div>
                     <div className="max-w-7xl mx-auto p-6 pt-20 lg:p-8 lg:pt-8">
