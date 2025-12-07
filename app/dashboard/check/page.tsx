@@ -40,15 +40,15 @@ export default async function CheckPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-4xl font-bold text-white mb-2">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">
                         Compliance Checks
                     </h1>
-                    <p className="text-gray-400">
+                    <p className="text-slate-500">
                         Bewerten Sie Ihr KI-System gemäß EU AI Act
                     </p>
                 </div>
                 <Link href="/dashboard/check/new">
-                    <Button size="lg" className="group">
+                    <Button size="lg" className="group rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
                         <Plus className="w-5 h-5 mr-2" />
                         Neuer Check
                     </Button>

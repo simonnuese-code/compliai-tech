@@ -95,34 +95,34 @@ export default function NewCheckPage() {
         <div className="max-w-3xl mx-auto space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-bold text-white mb-2">
+                <h1 className="text-3xl font-bold text-slate-900 mb-2">
                     Neuer Compliance Check
                 </h1>
-                <p className="text-gray-400">
+                <p className="text-slate-500">
                     Schritt {currentStep + 1} von {totalSteps}
                 </p>
             </div>
 
             {/* Progress */}
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-2 bg-slate-100" indicatorClassName="bg-gradient-to-r from-cyan-500 to-blue-500" />
 
             {/* Questions */}
             <GlassCard padding="lg">
-                <h2 className="text-2xl font-semibold text-white mb-6">
+                <h2 className="text-2xl font-semibold text-slate-900 mb-6">
                     {currentStepData.title}
                 </h2>
 
                 <div className="space-y-6">
                     {currentStepData.questions.map((q) => (
                         <div key={q.id}>
-                            <label className="block text-white font-medium mb-2">
+                            <label className="block text-slate-900 font-medium mb-2">
                                 {q.question}
-                                {q.required && <span className="text-red-400 ml-1">*</span>}
+                                {q.required && <span className="text-red-500 ml-1">*</span>}
                             </label>
 
                             {q.type === 'textarea' && (
                                 <textarea
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all shadow-sm"
                                     rows={4}
                                     value={answers[q.id] || ''}
                                     onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
@@ -132,7 +132,7 @@ export default function NewCheckPage() {
 
                             {q.type === 'select' && (
                                 <select
-                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-900"
+                                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all shadow-sm"
                                     value={answers[q.id] || ''}
                                     onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
                                 >
