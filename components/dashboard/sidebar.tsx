@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -211,7 +210,6 @@ export function Sidebar({ user }: SidebarProps) {
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <ThemeToggle className="scale-75 origin-right" />
                     <button
                         onClick={() => setMobileOpen(true)}
                         className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
