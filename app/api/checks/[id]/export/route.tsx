@@ -27,37 +27,48 @@ export async function GET(
   }
 
   const user = await prisma.user.findUnique({
-      where: { id: session.user.id }
+    where: { id: session.user.id }
   })
 
   // Create or Update Document Record
   const existingDoc = await prisma.document.findFirst({
-      where: {
-          checkId: check.id,
-          type: 'COMPLIANCE_REPORT'
-      }
+    where: {
+      checkId: check.id,
+      type: 'COMPLIANCE_REPORT'
+    }
   })
 
   if (!existingDoc) {
-      await prisma.document.create({
-          data: {
-              userId: session.user.id,
-              checkId: check.id,
-              title: `Compliance Report - ${new Date(check.createdAt).toLocaleDateString('de-DE')}`,
-              type: 'COMPLIANCE_REPORT',
-              version: 1
-          }
-      })
+    await prisma.document.create({
+      data: {
+        userId: session.user.id,
+        checkId: check.id,
+        title: `Compliance Report - ${new Date(check.createdAt).toLocaleDateString('de-DE')}`,
+        type: 'COMPLIANCE_REPORT',
+        version: 1
+      }
+    })
   } else {
-      await prisma.document.update({
-          where: { id: existingDoc.id },
-          data: { updatedAt: new Date() }
-      })
+    await prisma.document.update({
+      where: { id: existingDoc.id },
+      data: { updatedAt: new Date() }
+    })
+  }
+
+  let logoBase64 = undefined;
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logoPath = path.join(process.cwd(), 'public', 'compliai-logo-full.png');
+    const logoBuffer = fs.readFileSync(logoPath);
+    logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+  } catch (e) {
+    console.error('Failed to load logo', e);
   }
 
   try {
-    const stream = await renderToStream(<ComplianceReportPDF check={check} user={user} />)
-    
+    const stream = await renderToStream(<ComplianceReportPDF check={check} user={user} logoBase64={logoBase64} />)
+
     return new NextResponse(stream as any, {
       headers: {
         'Content-Type': 'application/pdf',
