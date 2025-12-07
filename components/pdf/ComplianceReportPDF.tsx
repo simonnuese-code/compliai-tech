@@ -1,4 +1,3 @@
-```
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image, Font } from '@react-pdf/renderer';
 
@@ -195,11 +194,11 @@ export const ComplianceReportPDF = ({ check, user, logoBase64 }: ComplianceRepor
 
   const getRiskLabel = (level: string) => {
     switch (level) {
-        case 'MINIMAL': return 'Minimal';
-        case 'LIMITED': return 'Begrenzt';
-        case 'HIGH': return 'Hoch';
-        case 'UNACCEPTABLE': return 'Unzulässig';
-        default: return level;
+      case 'MINIMAL': return 'Minimal';
+      case 'LIMITED': return 'Begrenzt';
+      case 'HIGH': return 'Hoch';
+      case 'UNACCEPTABLE': return 'Unzulässig';
+      default: return level;
     }
   };
 
@@ -209,100 +208,99 @@ export const ComplianceReportPDF = ({ check, user, logoBase64 }: ComplianceRepor
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.headerStrip} />
-        
+
         {/* Header */}
         <View style={styles.header}>
-            {logoBase64 ? (
-                <Image src={logoBase64} style={styles.logo} />
-            ) : (
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#06B6D4' }}>CompliAI</Text>
-            )}
-            <View style={styles.headerMeta}>
-                <Text style={styles.headerMetaText}>Compliance Report</Text>
-                <Text style={styles.headerMetaText}>{formattedDate}</Text>
-            </View>
+          {logoBase64 ? (
+            <Image src={logoBase64} style={styles.logo} />
+          ) : (
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#06B6D4' }}>CompliAI</Text>
+          )}
+          <View style={styles.headerMeta}>
+            <Text style={styles.headerMetaText}>Compliance Report</Text>
+            <Text style={styles.headerMetaText}>{formattedDate}</Text>
+          </View>
         </View>
 
         <View style={styles.content}>
-            {/* Title */}
-            <View style={styles.titleSection}>
-                <Text style={styles.title}>EU AI Act Compliance Check</Text>
-                <Text style={styles.subtitle}>Erstellt für {user.name || user.email}</Text>
-                <Text style={styles.checkId}>Check ID: {check.id}</Text>
-            </View>
+          {/* Title */}
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>EU AI Act Compliance Check</Text>
+            <Text style={styles.subtitle}>Erstellt für {user.name || user.email}</Text>
+            <Text style={styles.checkId}>Check ID: {check.id}</Text>
+          </View>
 
-            {/* Key Stats Card */}
-            <View style={styles.statsCard}>
-                <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>GESAMT-SCORE</Text>
-                    <Text style={{ ...styles.statValueBig, color: check.overallScore >= 80 ? '#10B981' : check.overallScore >= 60 ? '#F59E0B' : '#EF4444' }}>
-                        {check.overallScore}/100
-                    </Text>
-                </View>
-                <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>RISIKOSTUFE</Text>
-                    <Text style={{ ...styles.statValueBig, color: getRiskColor(check.riskLevel) }}>
-                        {getRiskLabel(check.riskLevel)}
-                    </Text>
-                </View>
-                <View style={styles.statBoxLast}>
-                    <Text style={styles.statLabel}>STATUS</Text>
-                    <Text style={{ ...styles.statValueBig, color: '#0F172A' }}>
-                        {check.status === 'COMPLETED' ? 'Abgeschlossen' : 'In Bearbeitung'}
-                    </Text>
-                </View>
+          {/* Key Stats Card */}
+          <View style={styles.statsCard}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>GESAMT-SCORE</Text>
+              <Text style={{ ...styles.statValueBig, color: check.overallScore >= 80 ? '#10B981' : check.overallScore >= 60 ? '#F59E0B' : '#EF4444' }}>
+                {check.overallScore}/100
+              </Text>
             </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>RISIKOSTUFE</Text>
+              <Text style={{ ...styles.statValueBig, color: getRiskColor(check.riskLevel) }}>
+                {getRiskLabel(check.riskLevel)}
+              </Text>
+            </View>
+            <View style={styles.statBoxLast}>
+              <Text style={styles.statLabel}>STATUS</Text>
+              <Text style={{ ...styles.statValueBig, color: '#0F172A' }}>
+                {check.status === 'COMPLETED' ? 'Abgeschlossen' : 'In Bearbeitung'}
+              </Text>
+            </View>
+          </View>
 
-            {/* Scores Breakdown */}
-            <View style={styles.detailsGrid}>
-                <Text style={styles.sectionTitle}>Detailbewertung</Text>
-                <View style={styles.detailRow}>
-                    <Text style={{ ...styles.detailLabel, color: '#64748B' }}>Technische Robustheit:</Text>
-                    <Text style={styles.detailValue}>{check.technicalScore}/100</Text>
-                </View>
-                <View style={styles.detailRow}>
-                    <Text style={{ ...styles.detailLabel, color: '#64748B' }}>Dokumentation:</Text>
-                    <Text style={styles.detailValue}>{check.documentationScore}/100</Text>
-                </View>
-                <View style={styles.detailRow}>
-                    <Text style={{ ...styles.detailLabel, color: '#64748B' }}>Governance:</Text>
-                    <Text style={styles.detailValue}>{check.governanceScore}/100</Text>
-                </View>
+          {/* Scores Breakdown */}
+          <View style={styles.detailsGrid}>
+            <Text style={styles.sectionTitle}>Detailbewertung</Text>
+            <View style={styles.detailRow}>
+              <Text style={{ ...styles.detailLabel, color: '#64748B' }}>Technische Robustheit:</Text>
+              <Text style={styles.detailValue}>{check.technicalScore}/100</Text>
             </View>
+            <View style={styles.detailRow}>
+              <Text style={{ ...styles.detailLabel, color: '#64748B' }}>Dokumentation:</Text>
+              <Text style={styles.detailValue}>{check.documentationScore}/100</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={{ ...styles.detailLabel, color: '#64748B' }}>Governance:</Text>
+              <Text style={styles.detailValue}>{check.governanceScore}/100</Text>
+            </View>
+          </View>
 
-            {/* Recommendations */}
-            <View>
-                <Text style={styles.sectionTitle}>Handlungsempfehlungen</Text>
-                {recommendations.length > 0 ? (
-                    recommendations.map((rec: any, index: number) => (
-                        <View key={index} style={{ 
-                            ...styles.recCard, 
-                            borderLeftColor: rec.priority === 'HIGH' ? '#EF4444' : rec.priority === 'MEDIUM' ? '#F59E0B' : '#3B82F6' 
-                        }}>
-                            <View style={styles.recHeader}>
-                                <Text style={styles.recTitle}>{rec.title}</Text>
-                                <Text style={styles.recCategory}>({rec.category})</Text>
-                            </View>
-                            <Text style={styles.recDesc}>{rec.description}</Text>
-                        </View>
-                    ))
-                ) : (
-                    <Text style={{ fontSize: 10, color: '#64748B', fontStyle: 'italic', padding: 10 }}>
-                        Keine spezifischen Empfehlungen gefunden. Ihr System scheint gut aufgestellt zu sein!
-                    </Text>
-                )}
-            </View>
+          {/* Recommendations */}
+          <View>
+            <Text style={styles.sectionTitle}>Handlungsempfehlungen</Text>
+            {recommendations.length > 0 ? (
+              recommendations.map((rec: any, index: number) => (
+                <View key={index} style={{
+                  ...styles.recCard,
+                  borderLeftColor: rec.priority === 'HIGH' ? '#EF4444' : rec.priority === 'MEDIUM' ? '#F59E0B' : '#3B82F6'
+                }}>
+                  <View style={styles.recHeader}>
+                    <Text style={styles.recTitle}>{rec.title}</Text>
+                    <Text style={styles.recCategory}>({rec.category})</Text>
+                  </View>
+                  <Text style={styles.recDesc}>{rec.description}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ fontSize: 10, color: '#64748B', fontStyle: 'italic', padding: 10 }}>
+                Keine spezifischen Empfehlungen gefunden. Ihr System scheint gut aufgestellt zu sein!
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-            <Text style={styles.footerText}>
-                Generiert von CompliAI - Ihr Assistent für EU AI Act Compliance. 
-                Dieses Dokument dient als Orientierungshilfe und ersetzt keine rechtliche Beratung.
-            </Text>
+          <Text style={styles.footerText}>
+            Generiert von CompliAI - Ihr Assistent für EU AI Act Compliance.
+            Dieses Dokument dient als Orientierungshilfe und ersetzt keine rechtliche Beratung.
+          </Text>
         </View>
       </Page>
     </Document>
   );
 };
-```
