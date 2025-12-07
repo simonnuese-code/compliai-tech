@@ -85,7 +85,7 @@ export default async function RisikoanalysePage() {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 mb-2">
                         Risikoanalyse
@@ -94,15 +94,15 @@ export default async function RisikoanalysePage() {
                         Aktuelle Analyse vom {new Date(check.createdAt).toLocaleDateString('de-DE')} um {new Date(check.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
-                <div className="flex gap-3">
-                    <a href={`/api/checks/${check.id}/export`} download>
-                        <Button variant="outline" className="gap-2">
+                <div className="flex gap-3 w-full md:w-auto">
+                    <a href={`/api/checks/${check.id}/export`} download className="flex-1 md:flex-none">
+                        <Button variant="outline" className="gap-2 w-full md:w-auto">
                             <Download className="w-4 h-4" />
                             PDF Export
                         </Button>
                     </a>
-                    <Link href="/dashboard/check/new">
-                        <Button className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
+                    <Link href="/dashboard/check/new" className="flex-1 md:flex-none">
+                        <Button className="w-full md:w-auto rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
                             Neuer Check
                         </Button>
                     </Link>

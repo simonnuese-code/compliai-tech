@@ -180,19 +180,27 @@ export function Sidebar({ user }: SidebarProps) {
                 <SidebarContent />
             </motion.aside>
 
-            {/* Mobile Menu Button */}
-            <button
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white border border-slate-200 shadow-md"
-            >
-                {mobileOpen ? (
-                    <X className="w-6 h-6 text-slate-900" />
-                ) : (
+            {/* Mobile Header */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-40 px-4 flex items-center justify-between">
+                <div className="relative h-8 w-32">
+                    <Image
+                        src="/compliai-logo-full.png"
+                        alt="CompliAI"
+                        fill
+                        className="object-contain object-left"
+                        priority
+                        unoptimized
+                    />
+                </div>
+                <button
+                    onClick={() => setMobileOpen(true)}
+                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                >
                     <Menu className="w-6 h-6 text-slate-900" />
-                )}
-            </button>
+                </button>
+            </div>
 
-            {/* Mobile Sidebar */}
+            {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {mobileOpen && (
                     <>
@@ -200,17 +208,83 @@ export function Sidebar({ user }: SidebarProps) {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="lg:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+                            className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50"
                             onClick={() => setMobileOpen(false)}
                         />
                         <motion.aside
                             initial={{ x: '-100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
-                            transition={{ type: 'spring', damping: 25 }}
-                            className="lg:hidden fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 shadow-2xl"
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-white z-50 shadow-2xl flex flex-col"
                         >
-                            <SidebarContent />
+                            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                                <div className="relative h-8 w-32">
+                                    <Image
+                                        src="/compliai-logo-full.png"
+                                        alt="CompliAI"
+                                        fill
+                                        className="object-contain object-left"
+                                        priority
+                                        unoptimized
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => setMobileOpen(false)}
+                                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-slate-500" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto py-4">
+                                <nav className="px-3 space-y-1">
+                                    {navItems.map((item) => {
+                                        const Icon = item.icon
+                                        const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={() => setMobileOpen(false)}
+                                                className={cn(
+                                                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                                                    "hover:bg-slate-50",
+                                                    isActive
+                                                        ? "bg-slate-100 text-slate-900 font-semibold shadow-sm"
+                                                        : "text-slate-500 font-medium"
+                                                )}
+                                            >
+                                                <Icon className={cn(
+                                                    "w-5 h-5 flex-shrink-0 transition-colors",
+                                                    isActive ? "text-cyan-600" : "text-slate-400"
+                                                )} />
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        )
+                                    })}
+                                </nav>
+                            </div>
+
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-100 shadow-sm mb-3">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">
+                                        {user.name?.[0] || user.email[0].toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-slate-900 truncate">{user.name || 'User'}</p>
+                                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all text-slate-500 hover:text-rose-600"
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                    <span className="text-sm font-medium">Abmelden</span>
+                                </button>
+                            </div>
                         </motion.aside>
                     </>
                 )}

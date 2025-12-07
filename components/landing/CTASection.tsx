@@ -44,7 +44,7 @@ export default function CTASection({ content }: CTASectionProps) {
           variants={fadeUp}
           initial="initial"
           animate={isInView ? "animate" : "initial"}
-          className="bg-[#172554] rounded-[24px] p-10 md:p-14 text-center shadow-2xl shadow-blue-900/20 overflow-hidden relative border border-white/10"
+          className="bg-[#172554] rounded-[24px] p-6 md:p-14 text-center shadow-2xl shadow-blue-900/20 overflow-hidden relative border border-white/10"
         >
           {/* Dynamic Light Effect */}
           <motion.div
