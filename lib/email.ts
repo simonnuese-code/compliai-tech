@@ -27,8 +27,7 @@ export async function sendVerificationEmail(email: string, code: string, name: s
   }
 }
 
-export async function sendPasswordResetEmail(email: string, token: string, name: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+export async function sendPasswordResetEmail(email: string, token: string, name: string, baseUrl: string) {
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
   
   try {
