@@ -66,9 +66,9 @@ export function Sidebar({ user }: SidebarProps) {
                     className="flex items-center gap-3"
                 >
                     {!collapsed ? (
-                        <div className="relative h-8 w-40">
+                        <div className="relative h-10 w-48">
                             <Image
-                                src="/compliai-logo-full.png?v=3"
+                                src="/compliai-logo-transparent.png"
                                 alt="CompliAI"
                                 fill
                                 className="object-contain object-left"
