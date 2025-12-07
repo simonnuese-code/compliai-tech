@@ -27,9 +27,11 @@ export default async function CheckResultPage({ params }: CheckResultPageProps) 
     const session = await getSession()
     if (!session.user?.id) return redirect('/login')
 
+    const { id } = await params
+
     const check = await prisma.complianceCheck.findUnique({
         where: {
-            id: params.id,
+            id: id,
             userId: session.user.id
         }
     })
