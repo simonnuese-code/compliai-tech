@@ -71,7 +71,7 @@ export default function Navigation({ user }: NavigationProps) {
             {/* Pricing Button - Desktop */}
             <div className="hidden md:block mr-2">
               <Link href="/pricing">
-                <button className="px-5 py-2 rounded-full border border-slate-300/50 text-slate-700 font-medium hover:bg-white/10 hover:border-slate-400/70 transition-all duration-200 text-sm">
+                <button className="px-6 py-2.5 rounded-full border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all duration-200 text-sm">
                   Preise
                 </button>
               </Link>
