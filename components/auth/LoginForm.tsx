@@ -58,24 +58,24 @@ export function LoginForm() {
 
     return (
         <div className="w-full max-w-md mx-auto">
-            <div className="bg-[#0f172a] rounded-2xl p-8 md:p-10 shadow-2xl shadow-blue-900/20 border border-white/10 backdrop-blur-sm relative overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 md:p-10 shadow-xl shadow-slate-200/50 border border-white/50 relative overflow-hidden">
                 {/* Background Glow */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-blue-500/5 to-transparent opacity-30 pointer-events-none" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-cyan-50/50 to-transparent opacity-50 pointer-events-none" />
 
                 <div className="relative z-10">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-white mb-2">Willkommen zurück.</h1>
-                        <p className="text-slate-400">Melden Sie sich mit Ihren Zugangsdaten an.</p>
+                        <h1 className="text-3xl font-bold text-slate-900 mb-2">Willkommen zurück.</h1>
+                        <p className="text-slate-500">Melden Sie sich mit Ihren Zugangsdaten an.</p>
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-slate-300">E-Mail</Label>
+                            <Label htmlFor="email" className="text-slate-700">E-Mail</Label>
                             <Input
                                 id="email"
                                 type="email"
                                 placeholder="name@firma.de"
-                                className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-blue-500/20"
+                                className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20 transition-all"
                                 {...register("email")}
                             />
                             {errors.email && (
@@ -84,11 +84,11 @@ export function LoginForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="text-slate-300">Passwort</Label>
+                            <Label htmlFor="password" className="text-slate-700">Passwort</Label>
                             <Input
                                 id="password"
                                 type="password"
-                                className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-blue-500/20"
+                                className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20 transition-all"
                                 {...register("password")}
                             />
                             {errors.password && (
@@ -97,7 +97,7 @@ export function LoginForm() {
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">
+                            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-sm text-center">
                                 {error}
                             </div>
                         )}
@@ -119,9 +119,9 @@ export function LoginForm() {
                     </form>
 
                     <div className="mt-8 text-center">
-                        <p className="text-slate-400 text-sm">
+                        <p className="text-slate-500 text-sm">
                             Noch kein Konto?{" "}
-                            <Link href="/register" className="text-cyan-400 hover:text-cyan-300 font-medium hover:underline transition-colors">
+                            <Link href="/register" className="text-cyan-600 hover:text-cyan-700 font-medium hover:underline transition-colors">
                                 Jetzt registrieren
                             </Link>
                         </p>
