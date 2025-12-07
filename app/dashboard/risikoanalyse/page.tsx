@@ -198,54 +198,7 @@ export default async function RisikoanalysePage() {
                 />
             </div>
 
-            {/* Recommendations */}
-            <GlassCard padding="lg">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-lg bg-cyan-50 border border-cyan-100">
-                        <Eye className="w-5 h-5 text-cyan-600" />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900">Handlungsempfehlungen</h2>
-                </div>
 
-                {recommendations.length > 0 ? (
-                    <div className="space-y-4">
-                        {recommendations.map((rec: any, index: number) => (
-                            <div
-                                key={index}
-                                className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex gap-4"
-                            >
-                                <div className={cn(
-                                    "mt-1 w-2 h-2 rounded-full flex-shrink-0",
-                                    rec.priority === 'HIGH' ? "bg-red-500" :
-                                        rec.priority === 'MEDIUM' ? "bg-amber-500" : "bg-blue-500"
-                                )} />
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-semibold text-slate-900">{rec.title}</h4>
-                                        <Badge variant="outline" className="text-xs">
-                                            {rec.category}
-                                        </Badge>
-                                        <Badge variant="outline" className={cn(
-                                            "text-xs",
-                                            rec.priority === 'HIGH' ? "text-red-600 bg-red-50 border-red-200" :
-                                                rec.priority === 'MEDIUM' ? "text-amber-600 bg-amber-50 border-amber-200" : "text-blue-600 bg-blue-50 border-blue-200"
-                                        )}>
-                                            {rec.priority}
-                                        </Badge>
-                                    </div>
-                                    <p className="text-slate-600 text-sm">
-                                        {rec.description}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-slate-500">
-                        Keine spezifischen Empfehlungen gefunden. Ihr System scheint gut aufgestellt zu sein!
-                    </div>
-                )}
-            </GlassCard>
         </div>
     )
 }

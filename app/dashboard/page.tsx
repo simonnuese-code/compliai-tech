@@ -23,19 +23,13 @@ export default async function DashboardPage() {
     if (!session.user?.id) return null
 
     // Fetch User Stats
-    const [user, checksCount, openTasksCount, latestChecks] = await Promise.all([
+    const [user, checksCount, latestChecks] = await Promise.all([
         prisma.user.findUnique({
             where: { id: session.user.id },
             select: { name: true, onboarded: true }
         }),
         prisma.complianceCheck.count({
             where: { userId: session.user.id }
-        }),
-        prisma.task.count({
-            where: {
-                userId: session.user.id,
-                status: { in: ['OPEN', 'IN_PROGRESS'] }
-            }
         }),
         prisma.complianceCheck.findMany({
             where: { userId: session.user.id },
@@ -46,7 +40,8 @@ export default async function DashboardPage() {
                 status: true,
                 riskLevel: true,
                 overallScore: true,
-                createdAt: true
+                createdAt: true,
+                recommendations: true
             }
         })
     ])
@@ -57,6 +52,10 @@ export default async function DashboardPage() {
     const currentScore = latestChecks[0]?.overallScore || 0
     const previousScore = latestChecks[1]?.overallScore || 0
     const scoreTrend = checksCount > 1 ? currentScore - previousScore : 0
+
+    // Calculate Open Tasks from Recommendations
+    const latestRecs = latestChecks[0]?.recommendations as any[] | undefined
+    const openTasksCount = Array.isArray(latestRecs) ? latestRecs.length : 0
 
     return (
         <div className="space-y-8">
