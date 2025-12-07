@@ -78,10 +78,12 @@ export default async function CheckResultPage({ params }: CheckResultPageProps) 
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="gap-2">
-                        <Download className="w-4 h-4" />
-                        PDF Export
-                    </Button>
+                    <a href={`/api/checks/${check.id}/export`} download>
+                        <Button variant="outline" className="gap-2">
+                            <Download className="w-4 h-4" />
+                            PDF Export
+                        </Button>
+                    </a>
                     <Link href="/dashboard/check/new">
                         <Button className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20">
                             Neuer Check
