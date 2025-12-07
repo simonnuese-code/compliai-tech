@@ -331,26 +331,23 @@ export default function PricingPage() {
 
             {/* Final CTA */}
             <div className="text-center mb-20">
-                <div className="relative max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl shadow-cyan-500/20">
-                    {/* Vibrant Background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-600 via-blue-600 to-indigo-700" />
-
+                <div className="relative max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl shadow-cyan-500/20 bg-gradient-to-r from-cyan-500 to-blue-500">
                     {/* Decorative Elements */}
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20">
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
                         <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white blur-3xl" />
-                        <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-cyan-300 blur-3xl" />
+                        <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-cyan-200 blur-3xl" />
                     </div>
 
                     <div className="relative z-10 py-20 px-8 text-center">
-                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-sm">
                             Bereit für stressfreie Compliance?
                         </h2>
-                        <p className="text-lg md:text-xl text-cyan-50 mb-10 max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
                             Starten Sie jetzt Ihren kostenlosen Compliance Check. <br className="hidden md:block" />
                             Sicher, schnell und ohne Verpflichtungen.
                         </p>
                         <Link href="/register">
-                            <Button size="lg" className="rounded-full px-10 h-14 text-lg bg-white text-blue-600 hover:bg-blue-50 border-0 font-bold shadow-lg transition-all hover:scale-105 hover:shadow-xl">
+                            <Button size="lg" className="rounded-full px-10 h-14 text-lg bg-white text-blue-600 hover:bg-slate-50 border-0 font-bold shadow-lg transition-all hover:scale-105 hover:shadow-xl">
                                 Jetzt kostenlos testen
                             </Button>
                         </Link>
