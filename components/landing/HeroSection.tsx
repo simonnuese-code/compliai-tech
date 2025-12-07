@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, PlayCircle } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import type { HeroContent } from '@/lib/types/landing'
 import { fadeUp, headlineReveal, fadeInScale, containerStagger } from '@/lib/animations'
 
@@ -83,6 +84,13 @@ export default function HeroSection({ content }: HeroSectionProps) {
               size="lg"
               variant="ghost"
               className="px-8 py-6 text-lg font-medium w-full sm:w-auto rounded-full text-slate-600 hover:bg-slate-100"
+              onClick={(e) => {
+                e.preventDefault()
+                toast.info("Demo-Video folgt in Kürze", {
+                  description: "Wir arbeiten gerade am Feinschliff für das Video. Bitte schauen Sie später noch einmal vorbei.",
+                  duration: 4000,
+                })
+              }}
             >
               <Link href="/demo" className="inline-flex items-center gap-2">
                 <PlayCircle className="w-5 h-5" />

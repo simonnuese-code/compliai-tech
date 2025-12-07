@@ -5,6 +5,7 @@ import { useScrollAnimation } from '@/hooks/use-scroll-animation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowRight, Check, PlayCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import type { CTAContent } from '@/lib/types/landing'
 import { fadeUp } from '@/lib/animations'
 
@@ -108,6 +109,13 @@ export default function CTASection({ content }: CTASectionProps) {
               asChild
               variant="ghost"
               className="text-slate-300 hover:text-white hover:bg-white/5 px-6 h-12 text-base font-medium rounded-full w-full sm:w-auto border border-white/10"
+              onClick={(e) => {
+                e.preventDefault()
+                toast.info("Demo-Video folgt in Kürze", {
+                  description: "Wir arbeiten gerade am Feinschliff für das Video. Bitte schauen Sie später noch einmal vorbei.",
+                  duration: 4000,
+                })
+              }}
             >
               <Link href="/demo" className="inline-flex items-center gap-2">
                 <PlayCircle className="w-4 h-4" />
