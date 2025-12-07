@@ -53,16 +53,10 @@ export default async function DashboardPage() {
 
     const hasNoChecks = checksCount === 0
 
-    // Calculate completion rate
-    const completedChecks = await prisma.complianceCheck.count({
-        where: {
-            userId: session.user.id,
-            status: 'COMPLETED'
-        }
-    })
-    const completionRate = checksCount > 0
-        ? Math.round((completedChecks / checksCount) * 100)
-        : 0
+    // Calculate Compli-Score and Trend
+    const currentScore = latestChecks[0]?.overallScore || 0
+    const previousScore = latestChecks[1]?.overallScore || 0
+    const scoreTrend = checksCount > 1 ? currentScore - previousScore : 0
 
     return (
         <div className="space-y-8">
@@ -85,11 +79,16 @@ export default async function DashboardPage() {
                     color="blue"
                 />
                 <StatCard
-                    title="Compliance-Rate"
-                    value={`${completionRate}%`}
+                    title={
+                        <span>
+                            <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent font-bold">Compli</span>
+                            -Score
+                        </span>
+                    }
+                    value={`${currentScore}/100`}
                     icon={<TrendingUp className="w-6 h-6 text-emerald-600" />}
                     color="green"
-                    trend={{ value: 12, isPositive: true }}
+                    trend={checksCount > 1 ? { value: Math.abs(scoreTrend), isPositive: scoreTrend >= 0 } : undefined}
                 />
                 <StatCard
                     title="Offene Aufgaben"

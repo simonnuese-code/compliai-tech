@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface StatCardProps {
-    title: string
+    title: ReactNode
     value: string | number
     icon: ReactNode
     trend?: {
@@ -28,7 +28,7 @@ export function StatCard({ title, value, icon, trend, color = 'blue' }: StatCard
         <GlassCard hover padding="lg">
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm font-medium text-slate-500">{title}</p>
+                    <div className="text-sm font-medium text-slate-500">{title}</div>
                     <motion.p
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
