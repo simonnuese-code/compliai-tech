@@ -239,7 +239,6 @@ function QuestionInput({
         <div className="space-y-3">
             <label className="block text-base font-semibold text-slate-900">
                 {question.question}
-                {question.required && <span className="text-red-500 ml-1">*</span>}
             </label>
 
             {question.description && (

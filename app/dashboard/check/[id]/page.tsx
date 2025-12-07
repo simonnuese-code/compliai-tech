@@ -109,10 +109,14 @@ export default async function CheckResultPage({ params }: CheckResultPageProps) 
                                 cx="64"
                                 cy="64"
                                 r="56"
-                                className={cn("transition-all duration-1000 ease-out", getScoreColor(check.overallScore || 0).replace('text-', 'stroke-'))}
+                                className={cn(
+                                    "transition-all duration-1000 ease-out",
+                                    check.overallScore && check.overallScore >= 80 ? "stroke-emerald-500" :
+                                        check.overallScore && check.overallScore >= 60 ? "stroke-amber-500" : "stroke-red-500"
+                                )}
                                 strokeWidth="12"
                                 fill="none"
-                                strokeDasharray={351} // 2 * PI * 56
+                                strokeDasharray={351}
                                 strokeDashoffset={351 - (351 * (check.overallScore || 0)) / 100}
                                 strokeLinecap="round"
                             />
