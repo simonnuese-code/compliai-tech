@@ -1,53 +1,61 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
-import { cn } from "@/lib/utils"
+import { useTheme } from 'next-themes'
+import { Sun, Moon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 export function DarkModeToggle() {
+    const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = React.useState(false)
 
-    React.useEffect(() => {
+    useEffect(() => {
         setMounted(true)
     }, [])
 
-    if (!mounted) {
-        return null
-    }
+    if (!mounted) return null
 
-    const isDark = theme === "dark"
+    const isDark = theme === 'dark'
 
     return (
         <button
-            onClick={() => setTheme(isDark ? "light" : "dark")}
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Toggle dark mode"
             className={cn(
-                "fixed top-4 right-4 md:top-6 md:right-6 z-50",
-                "w-10 h-10 md:w-12 md:h-12",
-                "rounded-full backdrop-blur-xl",
-                "bg-slate-900/5 dark:bg-white/10",
-                "border border-slate-900/10 dark:border-white/10",
-                "hover:bg-slate-900/10 dark:hover:bg-white/20",
-                "transition-all duration-300",
-                "flex items-center justify-center",
-                "shadow-sm"
+                // Position
+                "fixed top-6 right-6 z-50",
+                // Size & Shape
+                "w-14 h-7 rounded-full",
+                // Styling
+                "relative backdrop-blur-xl border",
+                "transition-all duration-300 ease-in-out",
+                // Colors
+                isDark
+                    ? "bg-sky-500/80 border-sky-400/50"
+                    : "bg-gray-300/80 border-gray-400/50",
+                // Hover
+                "hover:shadow-lg"
             )}
-            aria-label="Toggle Dark Mode"
         >
-            <div className="relative w-6 h-6">
-                <Sun
-                    className={cn(
-                        "absolute inset-0 w-full h-full transition-all duration-500 rotate-0 scale-100 text-slate-700 dark:text-slate-200",
-                        isDark ? "-rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
-                    )}
-                />
-                <Moon
-                    className={cn(
-                        "absolute inset-0 w-full h-full transition-all duration-500 rotate-90 scale-0 text-slate-700 dark:text-slate-200",
-                        isDark ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-0 opacity-0"
-                    )}
-                />
+            {/* Slider Ball */}
+            <div
+                className={cn(
+                    "absolute top-0.5",
+                    "w-6 h-6 rounded-full",
+                    "bg-white shadow-md",
+                    "flex items-center justify-center",
+                    "transition-transform duration-300 ease-in-out",
+                    isDark ? "translate-x-7" : "translate-x-0.5"
+                )}
+            >
+                {/* Optional Icon */}
+                {isDark ? (
+                    <Moon className="w-3 h-3 text-slate-700" />
+                ) : (
+                    <Sun className="w-3 h-3 text-amber-500" />
+                )}
             </div>
         </button>
     )
