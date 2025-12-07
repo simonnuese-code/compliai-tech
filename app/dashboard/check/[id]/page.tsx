@@ -36,7 +36,8 @@ export default async function CheckResultPage({ params }: CheckResultPageProps) 
 
     if (!check) return notFound()
 
-    const recommendations = check.recommendations as any[] || []
+    const rawRecs = check.recommendations
+    const recommendations = Array.isArray(rawRecs) ? rawRecs : []
 
     // Helper for risk colors
     const getRiskColor = (level: string) => {

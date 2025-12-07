@@ -18,11 +18,14 @@ export default function NewCheckPage() {
 
             const data = await res.json()
 
-            if (res.ok) {
-                router.push(`/dashboard/check/${data.id}`)
+            if (!res.ok) {
+                throw new Error(data.error || 'Fehler beim Speichern')
             }
-        } catch (error) {
+
+            router.push(`/dashboard/check/${data.id}`)
+        } catch (error: any) {
             console.error('Submit error:', error)
+            alert('Ein Fehler ist aufgetreten: ' + error.message)
         }
     }
 
