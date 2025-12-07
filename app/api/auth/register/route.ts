@@ -26,8 +26,12 @@ export async function POST(request: NextRequest) {
     const result = registerSchema.safeParse(body)
 
     if (!result.success) {
+      console.error('Validation error:', result.error.flatten())
       return NextResponse.json(
-        { error: 'Ungültige Eingaben' },
+        { 
+          error: 'Ungültige Eingaben',
+          details: result.error.flatten()
+        },
         { status: 400 }
       )
     }
@@ -90,7 +94,10 @@ export async function POST(request: NextRequest) {
 
     if (!emailResult.success) {
       return NextResponse.json(
-        { error: 'Email konnte nicht gesendet werden' },
+        { 
+          error: 'Email konnte nicht gesendet werden. Bitte überprüfen Sie, ob Ihre Email-Adresse für den Versand freigeschaltet ist (Resend Sandbox).',
+          details: emailResult.error 
+        },
         { status: 500 }
       )
     }

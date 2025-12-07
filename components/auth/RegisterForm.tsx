@@ -71,8 +71,14 @@ export function RegisterForm() {
             });
 
             if (!response.ok) {
-                const result = await response.json();
-                throw new Error(result.message || "Ein Fehler ist aufgetreten.");
+                let errorMessage = result.error || result.message || "Ein Fehler ist aufgetreten.";
+                if (result.details?.fieldErrors) {
+                    const details = Object.entries(result.details.fieldErrors)
+                        .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`)
+                        .join('; ');
+                    errorMessage += ` (${details})`;
+                }
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
