@@ -68,11 +68,11 @@ export default function Navigation({ user }: NavigationProps) {
 
           {/* Right: Auth Buttons */}
           <div className="flex items-center gap-4">
-            {/* Pricing Button - Desktop */}
-            <div className="hidden md:block mr-2">
+            {/* Pricing Button */}
+            <div className="mr-1 md:mr-2">
               <Button
                 asChild
-                className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-6"
+                className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-3 py-2 text-xs h-auto md:px-6 md:py-2.5 md:text-sm"
               >
                 <Link href="/pricing">
                   Preise

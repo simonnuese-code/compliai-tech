@@ -118,13 +118,13 @@ export default function PricingPage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null)
 
     return (
-        <div className="relative z-10 pt-32 pb-20 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="relative z-10 pt-24 md:pt-32 pb-12 md:pb-20 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
             {/* Hero Section */}
-            <div className="text-center mb-24">
+            <div className="text-center mb-12 md:mb-24">
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-6"
+                    className="text-3xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-4 md:mb-6"
                 >
                     Transparente Preise.<br />
                     <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Keine versteckten Kosten.</span>
@@ -168,7 +168,7 @@ export default function PricingPage() {
             </div>
 
             {/* Pricing Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-16 md:mb-24">
                 {plans.map((plan, index) => (
                     <motion.div
                         key={plan.id}
@@ -292,7 +292,7 @@ export default function PricingPage() {
             </div>
 
             {/* FAQ Section */}
-            <div className="max-w-3xl mx-auto mb-24">
+            <div className="max-w-3xl mx-auto mb-16 md:mb-24">
                 <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Häufig gestellte Fragen</h2>
                 <div className="space-y-4">
                     {faqs.map((faq, index) => (
@@ -330,7 +330,7 @@ export default function PricingPage() {
             </div>
 
             {/* Final CTA */}
-            <div className="text-center mb-20">
+            <div className="text-center mb-12 md:mb-20">
                 <div className="relative max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl shadow-cyan-500/20 bg-gradient-to-r from-cyan-500 to-blue-500">
                     {/* Decorative Elements */}
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
