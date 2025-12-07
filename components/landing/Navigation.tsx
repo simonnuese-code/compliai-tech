@@ -66,6 +66,13 @@ export default function Navigation({ user }: NavigationProps) {
             </div>
           </Link>
 
+          {/* Middle: Navigation Links */}
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+              Preise
+            </Link>
+          </div>
+
           {/* Right: Auth Buttons */}
           <div className="flex items-center gap-4">
             {user ? (
