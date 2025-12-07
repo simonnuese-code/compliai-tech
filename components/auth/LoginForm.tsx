@@ -58,7 +58,7 @@ export function LoginForm() {
 
     return (
         <div className="w-full max-w-md mx-auto">
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 md:p-10 shadow-xl shadow-slate-200/50 border border-white/50 relative overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-2xl rounded-3xl p-8 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/60 ring-1 ring-slate-900/5 relative overflow-hidden">
                 {/* Background Glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-cyan-50/50 to-transparent opacity-50 pointer-events-none" />
 
