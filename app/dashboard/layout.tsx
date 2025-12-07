@@ -1,7 +1,6 @@
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
-import { DarkModeToggle } from '@/components/dashboard/dark-mode-toggle'
 import { prisma } from '@/lib/prisma'
 
 export default async function DashboardLayout({
@@ -30,8 +29,6 @@ export default async function DashboardLayout({
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <div className="flex">
                 <Sidebar user={user} />
-
-                <DarkModeToggle />
 
                 <main className="flex-1 lg:pl-0 pl-0 relative">
                     <div className="max-w-7xl mx-auto p-6 pt-20 lg:p-8 lg:pt-8">
