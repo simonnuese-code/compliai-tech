@@ -138,7 +138,7 @@ export function Sidebar({ user }: SidebarProps) {
                 {!collapsed ? (
                     <div className="space-y-3">
                         <div className="px-4 py-3 rounded-xl bg-slate-50 border border-slate-100">
-                            <p className="text-sm font-semibold text-slate-900 truncate">{user.name || 'User'}</p>
+                            <p className="text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent truncate">{user.name || 'User'}</p>
                             <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         </div>
                         <button

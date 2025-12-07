@@ -69,7 +69,7 @@ export default async function DashboardPage() {
             {/* Welcome Header */}
             <div>
                 <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                    Willkommen zurück, {user?.name}
+                    Willkommen zurück, <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">{user?.name}</span>
                 </h1>
                 <p className="text-slate-500">
                     Hier ist Ihre Compliance-Übersicht
