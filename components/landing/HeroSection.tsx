@@ -80,22 +80,18 @@ export default function HeroSection({ content }: HeroSectionProps) {
 
           {content.ctaSecondary && (
             <Button
-              asChild
               size="lg"
               variant="ghost"
               className="px-8 py-6 text-lg font-medium w-full sm:w-auto rounded-full text-slate-600 hover:bg-slate-100"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() => {
                 toast.info("Demo-Video folgt in Kürze", {
                   description: "Wir arbeiten gerade am Feinschliff für das Video. Bitte schauen Sie später noch einmal vorbei.",
                   duration: 4000,
                 })
               }}
             >
-              <Link href="/demo" className="inline-flex items-center gap-2">
-                <PlayCircle className="w-5 h-5" />
-                {content.ctaSecondary}
-              </Link>
+              <PlayCircle className="w-5 h-5 mr-2" />
+              {content.ctaSecondary}
             </Button>
           )}
         </motion.div>
