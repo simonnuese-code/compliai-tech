@@ -110,7 +110,10 @@ export default async function CheckPage() {
                                                         check.riskLevel === 'HIGH' && "bg-red-50 text-red-700 border-red-200",
                                                     )}
                                                 >
-                                                    {check.riskLevel}
+                                                    {check.riskLevel === 'MINIMAL' ? 'Minimal' :
+                                                        check.riskLevel === 'LIMITED' ? 'Begrenzt' :
+                                                            check.riskLevel === 'HIGH' ? 'Hoch' :
+                                                                check.riskLevel === 'UNACCEPTABLE' ? 'Unzulässig' : check.riskLevel}
                                                 </Badge>
                                             )}
                                         </div>

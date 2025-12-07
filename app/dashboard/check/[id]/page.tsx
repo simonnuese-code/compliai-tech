@@ -131,7 +131,10 @@ export default async function CheckResultPage({ params }: CheckResultPageProps) 
                         "px-6 py-3 rounded-full border-2 text-lg font-bold mb-2",
                         getRiskColor(check.riskLevel || 'UNKNOWN')
                     )}>
-                        {check.riskLevel}
+                        {check.riskLevel === 'MINIMAL' ? 'Minimal' :
+                            check.riskLevel === 'LIMITED' ? 'Begrenzt' :
+                                check.riskLevel === 'HIGH' ? 'Hoch' :
+                                    check.riskLevel === 'UNACCEPTABLE' ? 'Unzulässig' : check.riskLevel}
                     </div>
                     <p className="text-sm text-slate-500 max-w-[200px]">
                         Basierend auf EU AI Act Klassifizierung
