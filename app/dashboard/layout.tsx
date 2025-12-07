@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { prisma } from '@/lib/prisma'
 
 export default async function DashboardLayout({
@@ -26,10 +27,13 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <div className="flex">
                 <Sidebar user={user} />
-                <main className="flex-1 lg:pl-0 pl-0">
+                <main className="flex-1 lg:pl-0 pl-0 relative">
+                    <div className="absolute top-6 right-6 z-10 hidden lg:block">
+                        <ThemeToggle />
+                    </div>
                     <div className="max-w-7xl mx-auto p-6 pt-20 lg:p-8 lg:pt-8">
                         {children}
                     </div>

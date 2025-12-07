@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -60,7 +61,7 @@ export function Sidebar({ user }: SidebarProps) {
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
             {/* Logo */}
-            <div className={cn("p-6 border-b border-slate-100", collapsed && "px-2 py-4")}>
+            <div className={cn("p-6 border-b border-slate-100 dark:border-slate-800", collapsed && "px-2 py-4")}>
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -92,7 +93,7 @@ export function Sidebar({ user }: SidebarProps) {
                     <button
                         onClick={() => setCollapsed(!collapsed)}
                         className={cn(
-                            "p-2 hover:bg-slate-100 rounded-lg transition-colors",
+                            "p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors",
                             !collapsed && "ml-auto"
                         )}
                     >
@@ -116,16 +117,16 @@ export function Sidebar({ user }: SidebarProps) {
                             href={item.href}
                             className={cn(
                                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-                                "hover:bg-slate-50",
+                                "hover:bg-slate-50 dark:hover:bg-slate-800",
                                 isActive
-                                    ? "bg-slate-100 text-slate-900 font-semibold shadow-sm"
-                                    : "text-slate-500 font-medium",
+                                    ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold shadow-sm"
+                                    : "text-slate-500 dark:text-slate-400 font-medium",
                                 collapsed && "justify-center"
                             )}
                         >
                             <Icon className={cn(
                                 "w-5 h-5 flex-shrink-0 transition-colors",
-                                isActive ? "text-cyan-600" : "text-slate-400 group-hover:text-slate-600"
+                                isActive ? "text-cyan-600 dark:text-cyan-500" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
                             )} />
                             {!collapsed && (
                                 <span>
@@ -138,23 +139,23 @@ export function Sidebar({ user }: SidebarProps) {
             </nav>
 
             {/* User Section */}
-            <div className="p-4 border-t border-slate-100">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800">
                 {!collapsed ? (
                     <div className="space-y-3">
                         <Link
                             href="/"
-                            className="w-full flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-900 mb-2"
+                            className="w-full flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mb-2"
                         >
                             <ArrowLeft className="w-5 h-5" />
                             <span className="text-sm font-medium">Zur Startseite</span>
                         </Link>
-                        <div className="px-4 py-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <div className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                             <p className="text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent truncate">{user.name || 'User'}</p>
-                            <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-900"
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                         >
                             <LogOut className="w-5 h-5" />
                             <span className="text-sm font-medium">Abmelden</span>
@@ -164,16 +165,16 @@ export function Sidebar({ user }: SidebarProps) {
                     <div className="space-y-3">
                         <Link
                             href="/"
-                            className="w-full p-3 rounded-xl hover:bg-slate-50 transition-colors flex justify-center"
+                            className="w-full p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex justify-center"
                             title="Zur Startseite"
                         >
-                            <ArrowLeft className="w-5 h-5 text-slate-400" />
+                            <ArrowLeft className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                         </Link>
                         <button
                             onClick={handleLogout}
-                            className="w-full p-3 rounded-xl hover:bg-slate-50 transition-colors"
+                            className="w-full p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
-                            <LogOut className="w-5 h-5 text-slate-400 mx-auto" />
+                            <LogOut className="w-5 h-5 text-slate-400 dark:text-slate-500 mx-auto" />
                         </button>
                     </div>
                 )}
@@ -189,7 +190,7 @@ export function Sidebar({ user }: SidebarProps) {
                 animate={{ x: 0, opacity: 1 }}
                 className={cn(
                     "hidden lg:flex flex-col h-screen sticky top-0",
-                    "bg-white border-r border-slate-200 shadow-sm z-30",
+                    "bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-sm z-30",
                     "transition-all duration-300",
                     collapsed ? "w-20" : "w-64"
                 )}
@@ -198,7 +199,7 @@ export function Sidebar({ user }: SidebarProps) {
             </motion.aside>
 
             {/* Mobile Header */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-40 px-4 flex items-center justify-between">
+            <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-40 px-4 flex items-center justify-between">
                 <div className="relative h-8 w-32">
                     <Image
                         src="/compliai-logo-full.png"
@@ -209,12 +210,15 @@ export function Sidebar({ user }: SidebarProps) {
                         unoptimized
                     />
                 </div>
-                <button
-                    onClick={() => setMobileOpen(true)}
-                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-                >
-                    <Menu className="w-6 h-6 text-slate-900" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <ThemeToggle className="scale-75 origin-right" />
+                    <button
+                        onClick={() => setMobileOpen(true)}
+                        className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        <Menu className="w-6 h-6 text-slate-900 dark:text-slate-100" />
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Sidebar Overlay */}
@@ -233,9 +237,9 @@ export function Sidebar({ user }: SidebarProps) {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-white z-50 shadow-2xl flex flex-col"
+                            className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-slate-900 z-50 shadow-2xl flex flex-col"
                         >
-                            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div className="relative h-8 w-32">
                                     <Image
                                         src="/compliai-logo-full.png"
@@ -248,9 +252,9 @@ export function Sidebar({ user }: SidebarProps) {
                                 </div>
                                 <button
                                     onClick={() => setMobileOpen(false)}
-                                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                                 >
-                                    <X className="w-5 h-5 text-slate-500" />
+                                    <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                                 </button>
                             </div>
 
@@ -267,15 +271,15 @@ export function Sidebar({ user }: SidebarProps) {
                                                 onClick={() => setMobileOpen(false)}
                                                 className={cn(
                                                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-                                                    "hover:bg-slate-50",
+                                                    "hover:bg-slate-50 dark:hover:bg-slate-800",
                                                     isActive
-                                                        ? "bg-slate-100 text-slate-900 font-semibold shadow-sm"
-                                                        : "text-slate-500 font-medium"
+                                                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold shadow-sm"
+                                                        : "text-slate-500 dark:text-slate-400 font-medium"
                                                 )}
                                             >
                                                 <Icon className={cn(
                                                     "w-5 h-5 flex-shrink-0 transition-colors",
-                                                    isActive ? "text-cyan-600" : "text-slate-400"
+                                                    isActive ? "text-cyan-600 dark:text-cyan-500" : "text-slate-400 dark:text-slate-500"
                                                 )} />
                                                 <span>{item.label}</span>
                                             </Link>
@@ -284,19 +288,19 @@ export function Sidebar({ user }: SidebarProps) {
                                 </nav>
                             </div>
 
-                            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-                                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-100 shadow-sm mb-3">
+                            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+                                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm mb-3">
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">
                                         {user.name?.[0] || user.email[0].toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-slate-900 truncate">{user.name || 'User'}</p>
-                                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{user.name || 'User'}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all text-slate-500 hover:text-rose-600"
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all text-slate-500 dark:text-slate-400 hover:text-rose-600"
                                 >
                                     <LogOut className="w-5 h-5" />
                                     <span className="text-sm font-medium">Abmelden</span>

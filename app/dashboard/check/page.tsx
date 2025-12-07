@@ -40,10 +40,10 @@ export default async function CheckPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                         Compliance Checks
                     </h1>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 dark:text-slate-400">
                         Bewerten Sie Ihr KI-System gemäß EU AI Act
                     </p>
                 </div>
@@ -80,8 +80,8 @@ export default async function CheckPage() {
                                         <div className={cn(
                                             "p-3 rounded-xl flex-shrink-0",
                                             check.status === 'COMPLETED'
-                                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                                : "bg-amber-50 text-amber-600 border border-amber-100"
+                                                ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
+                                                : "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50"
                                         )}>
                                             {check.status === 'COMPLETED' ? (
                                                 <CheckCircle className="w-6 h-6" />
@@ -90,15 +90,15 @@ export default async function CheckPage() {
                                             )}
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="text-lg font-semibold text-slate-900 truncate pr-2">
+                                            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate pr-2">
                                                 Compliance Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
                                             </h3>
                                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
-                                                <span className="text-sm text-slate-500">
+                                                <span className="text-sm text-slate-500 dark:text-slate-400">
                                                     ID: {check.id.slice(0, 8)}...
                                                 </span>
                                                 {check.overallScore && (
-                                                    <span className="text-sm font-medium text-slate-700">
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                                         Score: {check.overallScore}/100
                                                     </span>
                                                 )}
@@ -106,9 +106,9 @@ export default async function CheckPage() {
                                                     <Badge
                                                         variant={check.riskLevel === 'HIGH' || check.riskLevel === 'UNACCEPTABLE' ? 'destructive' : 'outline'}
                                                         className={cn(
-                                                            check.riskLevel === 'MINIMAL' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                                            check.riskLevel === 'LIMITED' && "bg-amber-50 text-amber-700 border-amber-200",
-                                                            check.riskLevel === 'HIGH' && "bg-red-50 text-red-700 border-red-200",
+                                                            check.riskLevel === 'MINIMAL' && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+                                                            check.riskLevel === 'LIMITED' && "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+                                                            check.riskLevel === 'HIGH' && "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
                                                         )}
                                                     >
                                                         {check.riskLevel === 'MINIMAL' ? 'Minimal' :
@@ -122,7 +122,7 @@ export default async function CheckPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2 md:self-center self-end">
-                                        <div className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-slate-500 group-hover:text-slate-900 group-hover:bg-slate-100")}>
+                                        <div className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100 group-hover:bg-slate-100 dark:group-hover:bg-slate-800")}>
                                             Details
                                             <ArrowRight className="w-4 h-4 ml-2" />
                                         </div>

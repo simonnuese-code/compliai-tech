@@ -61,10 +61,10 @@ export default async function DashboardPage() {
         <div className="space-y-8">
             {/* Welcome Header */}
             <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                     Willkommen zurück, <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">{user?.name}</span>
                 </h1>
-                <p className="text-slate-500">
+                <p className="text-slate-500 dark:text-slate-400">
                     Hier ist Ihre Compliance-Übersicht
                 </p>
             </div>
@@ -132,12 +132,12 @@ export default async function DashboardPage() {
                     {/* Recent Checks */}
                     <GlassCard padding="lg">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-semibold text-slate-900">
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
                                 Letzte Checks
                             </h2>
                             <Link
                                 href="/dashboard/check"
-                                className="text-cyan-600 hover:text-cyan-700 text-sm font-medium flex items-center gap-1"
+                                className="text-cyan-600 hover:text-cyan-700 dark:text-cyan-500 dark:hover:text-cyan-400 text-sm font-medium flex items-center gap-1"
                             >
                                 Alle anzeigen
                                 <ArrowRight className="w-4 h-4" />
@@ -148,22 +148,22 @@ export default async function DashboardPage() {
                                 <Link
                                     key={check.id}
                                     href={`/dashboard/check/${check.id}`}
-                                    className="block p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-colors"
+                                    className="block p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 transition-colors"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-slate-900 font-medium">
+                                            <p className="text-slate-900 dark:text-slate-100 font-medium">
                                                 Check vom {new Date(check.createdAt).toLocaleDateString('de-DE')}
                                             </p>
-                                            <p className="text-sm text-slate-500 mt-1">
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                                                 Score: {check.overallScore || 'N/A'}/100
                                             </p>
                                         </div>
                                         <div className={cn(
                                             "px-3 py-1 rounded-full text-xs font-medium",
                                             check.status === 'COMPLETED'
-                                                ? "bg-emerald-100 text-emerald-700"
-                                                : "bg-amber-100 text-amber-700"
+                                                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                                : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
                                         )}>
                                             {check.status === 'COMPLETED' ? 'Abgeschlossen' : 'In Bearbeitung'}
                                         </div>
@@ -175,21 +175,21 @@ export default async function DashboardPage() {
 
                     {/* Quick Actions */}
                     <GlassCard padding="lg">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-6">
+                        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">
                             Schnellaktionen
                         </h2>
                         <div className="space-y-3">
                             <Link
                                 href="/dashboard/check/new"
-                                className="block p-4 rounded-xl bg-cyan-50 hover:bg-cyan-100/50 border border-cyan-100 transition-colors group"
+                                className="block p-4 rounded-xl bg-cyan-50 dark:bg-cyan-950/30 hover:bg-cyan-100/50 dark:hover:bg-cyan-900/40 border border-cyan-100 dark:border-cyan-900/50 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-white border border-cyan-100 shadow-sm">
+                                    <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-cyan-100 dark:border-cyan-900/50 shadow-sm">
                                         <CheckCircle className="w-5 h-5 text-cyan-600" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-slate-900 font-medium">Neuer Check</p>
-                                        <p className="text-sm text-slate-500">Compliance prüfen</p>
+                                        <p className="text-slate-900 dark:text-slate-100 font-medium">Neuer Check</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">Compliance prüfen</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 text-cyan-600 group-hover:translate-x-1 transition-transform" />
                                 </div>
@@ -197,15 +197,15 @@ export default async function DashboardPage() {
 
                             <Link
                                 href="/dashboard/dokumentation"
-                                className="block p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-colors group"
+                                className="block p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                    <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
                                         <FileText className="w-5 h-5 text-slate-500" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-slate-900 font-medium">Dokumentation</p>
-                                        <p className="text-sm text-slate-500">Templates erstellen</p>
+                                        <p className="text-slate-900 dark:text-slate-100 font-medium">Dokumentation</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">Templates erstellen</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
                                 </div>
@@ -213,15 +213,15 @@ export default async function DashboardPage() {
 
                             <Link
                                 href="/dashboard/dokumentation"
-                                className="block p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-colors group"
+                                className="block p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                    <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
                                         <BarChart3 className="w-5 h-5 text-slate-500" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-slate-900 font-medium">Bericht exportieren</p>
-                                        <p className="text-sm text-slate-500">PDF generieren</p>
+                                        <p className="text-slate-900 dark:text-slate-100 font-medium">Bericht exportieren</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">PDF generieren</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
                                 </div>

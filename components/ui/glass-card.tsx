@@ -33,10 +33,10 @@ export function GlassCard({
             onClick={onClick}
             className={cn(
                 // Base styles matching Landing Page (Light Mode)
-                "bg-white border border-slate-200",
-                "rounded-xl shadow-sm",
+                "bg-white dark:bg-slate-900/50 dark:backdrop-blur-md border border-slate-200 dark:border-slate-800",
+                "rounded-xl shadow-sm dark:shadow-none",
                 paddingClasses[padding],
-                hover && "cursor-pointer transition-all hover:shadow-md hover:border-slate-300",
+                hover && "cursor-pointer transition-all hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900/80",
                 className
             )}
         >

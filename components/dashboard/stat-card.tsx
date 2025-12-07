@@ -28,12 +28,12 @@ export function StatCard({ title, value, icon, trend, color = 'blue' }: StatCard
         <GlassCard hover padding="lg">
             <div className="flex items-start justify-between">
                 <div>
-                    <div className="text-sm font-medium text-slate-500">{title}</div>
+                    <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</div>
                     <motion.p
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={cn(
-                            "font-bold text-slate-900 mt-2",
+                            "font-bold text-slate-900 dark:text-slate-100 mt-2",
                             typeof value === 'string' && value.length > 8 ? "text-2xl" : "text-3xl"
                         )}
                     >
@@ -42,7 +42,7 @@ export function StatCard({ title, value, icon, trend, color = 'blue' }: StatCard
                     {trend && (
                         <p className={cn(
                             "text-sm mt-2 font-medium",
-                            trend.isPositive ? "text-emerald-600" : "text-red-600"
+                            trend.isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                         )}>
                             {trend.isPositive ? '↑' : '↓'} {trend.value}%
                         </p>
@@ -50,7 +50,7 @@ export function StatCard({ title, value, icon, trend, color = 'blue' }: StatCard
                 </div>
                 <div className={cn(
                     "p-3 rounded-xl",
-                    "bg-slate-50 border border-slate-100",
+                    "bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800",
                     colorClasses[color]
                 )}>
                     {icon}
