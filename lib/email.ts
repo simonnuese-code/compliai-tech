@@ -1,15 +1,23 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-if (!process.env.RESEND_API_KEY) {
-  console.error('RESEND_API_KEY is not set in environment variables');
-}
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com', // Default to Gmail if not set
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const sender = process.env.SMTP_FROM || '"CompliAI" <noreply@compliai.tech>';
 
 export async function sendVerificationEmail(email: string, code: string, name: string) {
   try {
-    await resend.emails.send({
-      from: 'CompliAI <onboarding@resend.dev>',
+    console.log(`📧 Attempting to send verification email to ${email} via SMTP...`);
+    
+    await transporter.sendMail({
+      from: sender,
       to: email,
       subject: 'Bestätige deine Email-Adresse',
       html: `
@@ -24,9 +32,10 @@ export async function sendVerificationEmail(email: string, code: string, name: s
         </div>
       `,
     });
+    console.log(`✅ Email sent successfully to ${email}`);
     return { success: true };
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('❌ Email send error:', error);
     return { success: false, error };
   }
 }
@@ -35,8 +44,10 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
   
   try {
-    await resend.emails.send({
-      from: 'CompliAI <support@resend.dev>',
+    console.log(`📧 Attempting to send password reset email to ${email} via SMTP...`);
+
+    await transporter.sendMail({
+      from: sender,
       to: email,
       subject: 'Passwort zurücksetzen',
       html: `
@@ -54,9 +65,10 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
         </div>
       `,
     });
+    console.log(`✅ Password reset email sent successfully to ${email}`);
     return { success: true };
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('❌ Email send error:', error);
     return { success: false, error };
   }
 }
