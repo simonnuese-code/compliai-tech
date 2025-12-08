@@ -9,7 +9,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendVerificationEmail(email: string, code: string, name: string) {
   try {
     await resend.emails.send({
-      from: 'CompliAI <onboarding@resend.dev>',
+      from: 'CompliAI <noreply@compliai.tech>',
       to: email,
       subject: 'Bestätige deine Email-Adresse',
       html: `
@@ -36,7 +36,7 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
   
   try {
     await resend.emails.send({
-      from: 'CompliAI <support@resend.dev>',
+      from: 'CompliAI <noreply@compliai.tech>',
       to: email,
       subject: 'Passwort zurücksetzen',
       html: `
