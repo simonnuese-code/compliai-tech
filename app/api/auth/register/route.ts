@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
     const verificationCode = generateVerificationCode()
     const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000) // 15 Min
 
+    console.log('🔐 VERIFICATION CODE (Register):', verificationCode, 'for', email)
+
     // User erstellen OHNE emailVerified
     const user = await prisma.user.create({
       data: {
