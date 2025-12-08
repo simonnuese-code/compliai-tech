@@ -43,10 +43,49 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email bereits registriert' },
-        { status: 400 }
-      )
+      if (existingUser.emailVerified) {
+        return NextResponse.json(
+          { error: 'Email bereits registriert' },
+          { status: 400 }
+        )
+      } else {
+        // User exists but executes registration again -> Update usage data and resend code
+        const passwordHash = await bcrypt.hash(password, 10)
+        const verificationCode = generateVerificationCode()
+        const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000) // 15 Min
+
+        console.log('🔐 VERIFICATION CODE (Re-Register):', verificationCode, 'for', email)
+
+        await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+                passwordHash,
+                name,
+                company,
+                verificationToken: verificationCode,
+                verificationTokenExpiry,
+            }
+        })
+
+        // Email senden
+        const emailResult = await sendVerificationEmail(email, verificationCode, name)
+
+        if (!emailResult.success) {
+            return NextResponse.json(
+                { 
+                    error: 'Email konnte nicht gesendet werden.',
+                    details: emailResult.error 
+                },
+                { status: 500 }
+            )
+        }
+
+        return NextResponse.json({
+            message: 'Registrierung erneuert. Bitte prüfe deine Emails.',
+            email,
+            checkId: null // We don't create a new check on re-registration to keep it simple for now, or could link existing
+        })
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
