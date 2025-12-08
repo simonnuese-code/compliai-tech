@@ -90,7 +90,7 @@ const plans = [
         ],
         highlight: false,
         cta: "Kontakt aufnehmen",
-        href: "/contact"
+        href: "mailto:service@compliai.tech?subject=Anfrage Enterprise Plan"
     }
 ]
 
