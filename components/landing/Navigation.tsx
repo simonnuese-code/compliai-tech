@@ -50,7 +50,7 @@ export default function Navigation({ user }: NavigationProps) {
                 height={53}
                 className="h-10 md:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
                 priority
-                unoptimized
+                sizes="(max-width: 768px) 100vw, 200px"
               />
             </div>
             {/* Mobile: Icon Only - larger */}
@@ -62,6 +62,7 @@ export default function Navigation({ user }: NavigationProps) {
                 height={40}
                 className="h-10 w-10 transition-transform duration-300 group-hover:scale-105"
                 priority
+                sizes="40px"
               />
             </div>
           </Link>
