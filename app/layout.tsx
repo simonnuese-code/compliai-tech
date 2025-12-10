@@ -15,23 +15,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CompliAI - Don't just comply. Get your CompliAI",
-  description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität. Kostenlos, sicher und sofort verfügbar.",
+  title: "CompliAI - Der AI Act Compliance Copilot",
+  description: "CompliAI ist Ihre intelligente Lösung für EU AI Act Konformität. Automatisierte Risikoanalyse, Dokumentation und Compliance-Checks für KI-Systeme.",
+  keywords: ["CompliAI", "EU AI Act", "AI Compliance", "KI Regulierung", "AI Act Checker", "Compliance Software", "SaaS", "Startup"],
   icons: {
     icon: '/compliai-logo-icon.png?v=4',
     apple: '/compliai-logo-icon.png?v=4',
   },
   openGraph: {
-    title: "CompliAI - Don't just comply. Get your CompliAI",
-    description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität. Kostenlos, sicher und sofort verfügbar.",
-    url: 'https://compliai.tech',
+    title: "CompliAI - Der AI Act Compliance Copilot",
+    description: "CompliAI ist Ihre intelligente Lösung für EU AI Act Konformität. Automatisierte Risikoanalyse, Dokumentation und Compliance-Checks für KI-Systeme.",
+    url: 'https://www.compliai.tech',
     siteName: 'CompliAI',
     images: [
       {
         url: '/compliai-logo-full.png',
         width: 1200,
         height: 630,
-        alt: 'CompliAI Dashboard',
+        alt: 'CompliAI Plattform',
       },
     ],
     locale: 'de_DE',
@@ -39,9 +40,20 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "CompliAI - Don't just comply. Get your CompliAI",
-    description: "Ihr intelligenter Co-Pilot für die EU AI Act Compliance. Prüfen Sie Ihr KI-System in 5 Minuten auf Konformität.",
+    title: "CompliAI - Der AI Act Compliance Copilot",
+    description: "Automatisierte Risikoanalyse, Dokumentation und Compliance-Checks für den EU AI Act.",
     images: ['/compliai-logo-full.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
@@ -78,6 +90,45 @@ export default function RootLayout({
                 ce('https://sc.lfeeder.com/lftracker_v1_'+ss+(ex?'_'+ex:'')+'.js');
               })(document,'script');
             })('${process.env.NEXT_PUBLIC_LEADFEEDER_ID || "ywVkO4XmmlzaZ6Bj"}');
+          `}
+        </Script>
+
+        {/* Structured Data (SEO) */}
+        <Script id="schema-org" strategy="beforeInteractive" type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "CompliAI",
+              "url": "https://www.compliai.tech",
+              "logo": "https://www.compliai.tech/compliai-logo-icon.png",
+              "sameAs": [
+                "https://www.linkedin.com/company/compliai",
+                "https://twitter.com/compliai"
+              ],
+              "description": "CompliAI ist Ihre intelligente Lösung für EU AI Act Konformität.",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Münster",
+                "addressCountry": "DE"
+              }
+            }
+          `}
+        </Script>
+        <Script id="schema-software" strategy="beforeInteractive" type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "CompliAI Platform",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "EUR"
+              }
+            }
           `}
         </Script>
       </body>
