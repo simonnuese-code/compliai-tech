@@ -66,7 +66,7 @@ export default function RootLayout({
         <Script id="leadfeeder-tracking" strategy="afterInteractive">
           {`
             (function(ss,ex){
-              window.ldfdr=window.ldfdr||function(){(ldfdr.q=ldfdr.q||[]).push([].slice.call(arguments));};
+              window.ldfdr=window.ldfdr||function(){(ldfdr._q=ldfdr._q||[]).push([].slice.call(arguments));};
               (function(d,s){
                 fs=d.getElementsByTagName(s)[0];
                 function ce(src){
@@ -77,7 +77,7 @@ export default function RootLayout({
                 }
                 ce('https://sc.lfeeder.com/lftracker_v1_'+ss+(ex?'_'+ex:'')+'.js');
               })(document,'script');
-            })('${process.env.NEXT_PUBLIC_LEADFEEDER_ID || "YOUR_LEADFEEDER_ID"}');
+            })('${process.env.NEXT_PUBLIC_LEADFEEDER_ID || "ywVkO4XmmlzaZ6Bj"}');
           `}
         </Script>
       </body>
