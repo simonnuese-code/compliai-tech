@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -60,6 +61,25 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
+
+        {/* Leadfeeder Tracking */}
+        <Script id="leadfeeder-tracking" strategy="afterInteractive">
+          {`
+            (function(ss,ex){
+              window.ldfdr=window.ldfdr||function(){(ldfdr.q=ldfdr.q||[]).push([].slice.call(arguments));};
+              (function(d,s){
+                fs=d.getElementsByTagName(s)[0];
+                function ce(src){
+                  var cs=d.createElement(s);
+                  cs.src=src;
+                  cs.async=1;
+                  fs.parentNode.insertBefore(cs,fs);
+                }
+                ce('https://sc.lfeeder.com/lftracker_v1_'+ss+(ex?'_'+ex:'')+'.js');
+              })(document,'script');
+            })('${process.env.NEXT_PUBLIC_LEADFEEDER_ID || "YOUR_LEADFEEDER_ID"}');
+          `}
+        </Script>
       </body>
     </html>
   );
