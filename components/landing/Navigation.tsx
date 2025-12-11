@@ -44,7 +44,7 @@ export default function Navigation({ user }: NavigationProps) {
             {/* Desktop: Full Logo - larger */}
             <div className="hidden md:block">
               <Image
-                src="/compliai-logo-full.png?v=3"
+                src="/compliai-logo-full.png"
                 alt="CompliAI - AI-Co-Pilot for EU Compliance"
                 width={200}
                 height={53}

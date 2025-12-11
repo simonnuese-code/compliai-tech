@@ -12,7 +12,7 @@ export default function Footer() {
             {/* Logo */}
             <div className="flex items-center">
               <Image
-                src="/compliai-logo-full.png?v=3"
+                src="/compliai-logo-full.png"
                 alt="CompliAI"
                 width={220}
                 height={56}
