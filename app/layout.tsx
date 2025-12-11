@@ -131,6 +131,13 @@ export default function RootLayout({
             }
           `}
         </Script>
+
+        {/* Hotjar / ContentSquare Tracking */}
+        <Script
+          id="contentsquare-tracking"
+          src="https://t.contentsquare.net/uxa/57bb9df73d48e.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
