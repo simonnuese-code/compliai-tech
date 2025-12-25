@@ -139,7 +139,7 @@ export default function FeaturesSection({ content }: { content: any }) {
     return (
         <section
             ref={ref}
-            className="min-h-screen flex flex-col justify-center py-32 px-4 md:px-6 lg:px-8 relative overflow-hidden bg-slate-900"
+            className="min-h-screen w-full max-w-[100vw] flex flex-col justify-center py-24 md:py-32 px-4 md:px-6 lg:px-8 relative overflow-hidden bg-slate-900"
             id="features"
         >
             {/* Soft Blend from Previous Section (Problem - Dark) */}
@@ -150,7 +150,7 @@ export default function FeaturesSection({ content }: { content: any }) {
                 {/* Central Radial Glow - Spotlight Effect */}
                 <div
                     className={cn(
-                        "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] blur-[60px] md:w-[800px] md:h-[800px] md:blur-[120px] transition-all duration-1000 opacity-40",
+                        "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] blur-[60px] md:w-[800px] md:h-[800px] md:blur-[120px] transition-all duration-1000 opacity-30",
                         activeTab === 'analyse' && "bg-cyan-600/30",
                         activeTab === 'dokumentation' && "bg-blue-600/30",
                         activeTab === 'zusammenarbeit' && "bg-indigo-600/30"
@@ -161,9 +161,9 @@ export default function FeaturesSection({ content }: { content: any }) {
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-transparent to-slate-900/50" />
             </div>
 
-            <div className="max-w-6xl mx-auto relative z-20">
+            <div className="max-w-6xl mx-auto relative z-20 w-full">
                 {/* Header */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-12 md:mb-16 px-2">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -172,17 +172,17 @@ export default function FeaturesSection({ content }: { content: any }) {
                         <span className="inline-block text-cyan-400 font-semibold tracking-wider uppercase text-sm mb-4">
                             Plattform Features
                         </span>
-                        <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white tracking-tight">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white tracking-tight break-words hyphens-auto">
                             Alles für Ihre EU AI Act Compliance.
                         </h2>
-                        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-base md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed break-words">
                             <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500">CompliAI</span> bündelt Analyse, Dokumentation und Zusammenarbeit in einem durchgängigen Compliance-Workflow.
                         </p>
                     </motion.div>
                 </div>
 
                 {/* Interactive Tabs */}
-                <div className="flex justify-start md:justify-center mb-16 w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
+                <div className="flex justify-start md:justify-center mb-16 w-full max-w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
                     <div
                         ref={containerRef}
                         className="inline-flex p-1.5 rounded-full bg-slate-950/90 border border-white/10 md:bg-slate-950/50 md:backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] min-w-fit md:mx-auto"
