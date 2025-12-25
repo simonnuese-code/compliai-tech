@@ -226,7 +226,28 @@ export function RegisterForm() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => window.location.href = '/api/auth/apple/login'}
+                                onClick={() => {
+                                    // Show toast notification
+                                    const toast = document.createElement('div');
+                                    toast.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-8 z-50 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300 max-w-sm w-full text-center';
+                                    toast.innerHTML = `
+                                        <div class="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-2">
+                                            <svg class="w-6 h-6 text-slate-900" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.35-1.09-.56-2.08-.49-3.17.06-1.12.55-2.09.43-3.07-.56A11.36 11.36 0 0 1 3.5 13.9c-.31-3.6 2.37-5.96 5.37-6.04 1.45-.04 2.5.95 3.3.95.8 0 1.96-1.02 3.42-.95 1.13.05 2.19.49 2.97 1.25-2.6 1.4-2.18 5.2.42 6.35-.55 1.58-1.28 3.14-1.93 4.82ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.16 2.22-1.84 4.08-3.74 4.25Z" /></svg>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-slate-900">Bald verfügbar</h3>
+                                        <p class="text-slate-500">Die Registrierung mit Apple steht in Kürze bereit. Bitte nutzen Sie vorübergehend eine andere Methode.</p>
+                                        <button onclick="this.parentElement.remove()" class="mt-2 w-full bg-slate-900 text-white font-medium py-2.5 rounded-full hover:bg-slate-800 transition-colors">Verstanden</button>
+                                    `;
+                                    document.body.appendChild(toast);
+
+                                    // Auto remove after 5s
+                                    setTimeout(() => {
+                                        if (document.body.contains(toast)) {
+                                            toast.classList.add('fade-out', 'zoom-out');
+                                            setTimeout(() => toast.remove(), 300);
+                                        }
+                                    }, 5000);
+                                }}
                                 className="w-full bg-black hover:bg-slate-900 text-white border-0 font-medium py-6 rounded-full flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
                             >
                                 <svg className="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.35-1.09-.56-2.08-.49-3.17.06-1.12.55-2.09.43-3.07-.56A11.36 11.36 0 0 1 3.5 13.9c-.31-3.6 2.37-5.96 5.37-6.04 1.45-.04 2.5.95 3.3.95.8 0 1.96-1.02 3.42-.95 1.13.05 2.19.49 2.97 1.25-2.6 1.4-2.18 5.2.42 6.35-.55 1.58-1.28 3.14-1.93 4.82ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.16 2.22-1.84 4.08-3.74 4.25Z" /></svg>
