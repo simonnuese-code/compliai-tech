@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
+// Trigger redeploy for env vars
 export default function Footer() {
   return (
     <footer className="relative py-12 px-4 md:px-6 lg:px-8">
