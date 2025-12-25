@@ -299,7 +299,7 @@ export default function SolutionSection({ content }: SolutionSectionProps) {
   return (
     <section
       ref={ref}
-      className="min-h-screen flex flex-col justify-center relative py-32 px-4 md:px-6 lg:px-8 overflow-hidden bg-blue-50/50"
+      className="min-h-screen flex flex-col justify-center relative py-16 md:py-32 px-4 md:px-6 lg:px-8 overflow-hidden bg-blue-50/50"
       id="solution"
     >
       <SectionDivider position="top" variant="dark-to-light" />

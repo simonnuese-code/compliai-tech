@@ -33,7 +33,7 @@ export default function ProblemSection({ content }: ProblemSectionProps) {
   return (
     <section
       ref={containerRef}
-      className="min-h-screen flex flex-col justify-center py-24 px-4 md:px-6 lg:px-8 relative overflow-hidden bg-slate-950"
+      className="min-h-[80vh] md:min-h-screen flex flex-col justify-center py-16 md:py-24 px-4 md:px-6 lg:px-8 relative overflow-hidden bg-slate-950"
       id="problem"
     >
       {/* Dynamic Background - Liquid Feel */}

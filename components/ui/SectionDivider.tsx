@@ -66,7 +66,7 @@ export default function SectionDivider({ position, variant, className }: Section
 
             {/* Wave SVG */}
             <svg
-                className={cn("relative block w-[calc(100%+1.3px)] h-[50px] md:h-[80px]", fillClass)}
+                className={cn("relative block w-[calc(100%+1.3px)] h-[60px] md:h-[80px]", fillClass)}
                 data-name="Layer 1"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 1200 120"
