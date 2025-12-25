@@ -181,8 +181,33 @@ export default function FeaturesSection({ content }: { content: any }) {
                     </motion.div>
                 </div>
 
-                {/* Interactive Tabs */}
-                <div className="flex justify-start md:justify-center mb-16 w-full max-w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
+                {/* Interactive Tabs - Mobile (Vertical Stack) */}
+                <div className="flex md:hidden flex-col gap-2 w-full mb-8 px-2">
+                    {featureCategories.map((category) => (
+                        <button
+                            key={category.id}
+                            onClick={() => setActiveTab(category.id)}
+                            className={cn(
+                                "relative w-full p-4 rounded-xl text-left transition-all duration-300 border",
+                                activeTab === category.id
+                                    ? "bg-gradient-to-r from-cyan-500/90 via-blue-500/90 to-indigo-500/90 text-white border-white/20 shadow-lg shadow-cyan-900/20"
+                                    : "bg-slate-800/40 text-slate-400 border-white/5 hover:bg-slate-800/60 hover:text-slate-200"
+                            )}
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="font-semibold text-lg tracking-tight">{category.label}</span>
+                                {activeTab === category.id && (
+                                    <motion.div layoutId="active-check" className="bg-white/20 p-1 rounded-full">
+                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                    </motion.div>
+                                )}
+                            </div>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Interactive Tabs - Desktop (Horizontal Slider) */}
+                <div className="hidden md:flex justify-center mb-16 w-full max-w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
                     <div
                         ref={containerRef}
                         className="inline-flex p-1.5 rounded-full bg-slate-950/90 border border-white/10 md:bg-slate-950/50 md:backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] min-w-fit md:mx-auto"
@@ -223,11 +248,11 @@ export default function FeaturesSection({ content }: { content: any }) {
                             initial={false}
                             animate={{
                                 width: tabDimensions[activeTab]?.width ?? 0,
-                                scale: isDragging ? 1 : [1, 1.03, 1],
+                                scale: isDragging ? 1 : [1, 1.03, 1]
                             }}
                             transition={{
                                 width: { type: "spring", stiffness: 300, damping: 30 },
-                                scale: { duration: 0.3, times: [0, 0.5, 1] },
+                                scale: { duration: 0.3, times: [0, 0.5, 1] }
                             }}
                             drag="x"
                             dragConstraints={containerRef}
