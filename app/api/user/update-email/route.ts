@@ -33,6 +33,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Benutzer nicht gefunden' }, { status: 404 })
     }
 
+    if (!user.passwordHash) {
+      return NextResponse.json({ error: 'Bitte nutzen Sie den Login-Provider (Google/Apple/GitHub) um Ihre E-Mail zu ändern.' }, { status: 400 })
+    }
+
     const isValid = await bcrypt.compare(password, user.passwordHash)
 
     if (!isValid) {

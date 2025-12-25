@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       where: { email },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return NextResponse.json(
         { success: false, message: "E-Mail oder Passwort ist ungültig." },
         { status: 401 }

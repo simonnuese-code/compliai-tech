@@ -13,7 +13,10 @@ datasource db {
 model User {
   id                     String    @id @default(cuid())
   email                  String    @unique
-  passwordHash           String
+  passwordHash           String?
+  appleId                String?   @unique
+  googleId               String?   @unique
+  githubId               String?   @unique
   name                   String?
   emailVerified          DateTime?
   verificationToken      String?
