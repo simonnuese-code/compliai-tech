@@ -190,7 +190,7 @@ export default function Navigation({ user }: NavigationProps) {
 
                   <div className="h-px bg-white/10 my-6" />
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 px-2">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1 mb-2">Navigation</span>
 
                     <Button asChild variant="ghost" className="w-full justify-start gap-4 text-slate-300 hover:text-white hover:bg-white/10 h-12 rounded-xl text-base font-medium px-4">
