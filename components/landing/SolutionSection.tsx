@@ -385,7 +385,7 @@ export default function SolutionSection({ content }: SolutionSectionProps) {
               </div>
 
               {/* Content Area */}
-              <div className="absolute top-12 md:top-16 left-4 md:left-20 right-0 bottom-0 overflow-hidden">
+              <div className="absolute top-12 md:top-16 left-16 md:left-20 right-0 bottom-0 overflow-hidden">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activePhase}
@@ -393,7 +393,7 @@ export default function SolutionSection({ content }: SolutionSectionProps) {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className="w-[155%] h-[155%] sm:w-full sm:h-full scale-[0.65] sm:scale-100 origin-top-left"
+                    className="w-[166%] h-[166%] sm:w-full sm:h-full scale-[0.6] sm:scale-100 origin-top-left"
                   >
                     {activePhase === 0 && <MockupAnalyse />}
                     {activePhase === 1 && <MockupDokumentation />}
