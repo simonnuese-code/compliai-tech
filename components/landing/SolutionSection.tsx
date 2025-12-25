@@ -302,7 +302,7 @@ export default function SolutionSection({ content }: SolutionSectionProps) {
       className="min-h-screen flex flex-col justify-center relative py-16 md:py-32 px-4 md:px-6 lg:px-8 overflow-hidden bg-blue-50/50"
       id="solution"
     >
-      <SectionDivider position="top" variant="dark-to-light" />
+      <SectionDivider position="top" variant="dark-to-light" className="hidden md:block" />
       <div className="max-w-6xl mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
           {/* Left: Content */}
