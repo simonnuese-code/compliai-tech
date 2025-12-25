@@ -12,6 +12,9 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.0.0",
     "@radix-ui/react-accordion": "^1.2.12",
