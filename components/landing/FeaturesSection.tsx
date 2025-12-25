@@ -181,36 +181,11 @@ export default function FeaturesSection({ content }: { content: any }) {
                     </motion.div>
                 </div>
 
-                {/* Interactive Tabs - Mobile (Vertical Stack) */}
-                <div className="flex md:hidden flex-col gap-2 w-full mb-8 px-2">
-                    {featureCategories.map((category) => (
-                        <button
-                            key={category.id}
-                            onClick={() => setActiveTab(category.id)}
-                            className={cn(
-                                "relative w-full p-4 rounded-xl text-left transition-all duration-300 border",
-                                activeTab === category.id
-                                    ? "bg-gradient-to-r from-cyan-500/90 via-blue-500/90 to-indigo-500/90 text-white border-white/20 shadow-lg shadow-cyan-900/20"
-                                    : "bg-slate-800/40 text-slate-400 border-white/5 hover:bg-slate-800/60 hover:text-slate-200"
-                            )}
-                        >
-                            <div className="flex items-center justify-between">
-                                <span className="font-semibold text-lg tracking-tight">{category.label}</span>
-                                {activeTab === category.id && (
-                                    <motion.div layoutId="active-check" className="bg-white/20 p-1 rounded-full">
-                                        <div className="w-2 h-2 bg-white rounded-full" />
-                                    </motion.div>
-                                )}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Interactive Tabs - Desktop (Horizontal Slider) */}
-                <div className="hidden md:flex justify-center mb-16 w-full max-w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
+                {/* Interactive Tabs - Universal Glass Slider */}
+                <div className="flex justify-center mb-16 w-full px-2 md:px-4">
                     <div
                         ref={containerRef}
-                        className="inline-flex p-1.5 rounded-full bg-slate-950/90 border border-white/10 md:bg-slate-950/50 md:backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] min-w-fit md:mx-auto"
+                        className="inline-flex w-full md:w-auto p-1 rounded-full bg-slate-950/80 border border-white/10 backdrop-blur-md md:backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] mx-auto"
                     >
                         {/* Drag Hint Animation */}
                         <AnimatePresence>
@@ -238,12 +213,11 @@ export default function FeaturesSection({ content }: { content: any }) {
 
                         {/* Draggable Liquid Glass Pill */}
                         <motion.div
-                            className="absolute top-1.5 bottom-1.5 rounded-full shadow-[0_0_32px_rgba(75,189,255,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] z-10 cursor-grab active:cursor-grabbing select-none touch-none"
+                            className="absolute top-1 bottom-1 md:top-1.5 md:bottom-1.5 rounded-full shadow-[0_0_32px_rgba(75,189,255,0.55),inset_0_1px_1px_rgba(255,255,255,0.6)] z-10 cursor-grab active:cursor-grabbing select-none touch-none"
                             style={{
                                 x,
                                 background: "linear-gradient(90deg, rgba(66, 199, 255, 0.9) 0%, rgba(24, 144, 255, 0.9) 50%, rgba(14, 91, 216, 0.9) 100%)",
-                                // Simplified backdrop filter for mobile performance
-                                backdropFilter: "none"
+                                backdropFilter: "blur(12px) saturate(130%) brightness(1.1)"
                             }}
                             initial={false}
                             animate={{
@@ -301,14 +275,14 @@ export default function FeaturesSection({ content }: { content: any }) {
                                     setActiveTab(category.id)
                                 }}
                                 className={cn(
-                                    "relative px-6 py-2.5 rounded-full text-sm md:text-base transition-all duration-300 z-20 flex items-center justify-center",
+                                    "relative flex-1 md:flex-none px-1 py-3 md:px-6 md:py-2.5 rounded-full text-[10px] xs:text-xs sm:text-sm md:text-base transition-all duration-300 z-20 flex items-center justify-center",
                                     activeTab === category.id
                                         ? "text-white font-semibold"
                                         : "text-slate-400 font-medium hover:text-slate-200",
                                     (isDragging || activeTab === category.id) && "pointer-events-none"
                                 )}
                             >
-                                <span className="relative">{category.label}</span>
+                                <span className="relative z-20 whitespace-nowrap">{category.label}</span>
                             </button>
                         ))}
                     </div>
