@@ -137,46 +137,51 @@ export default function Navigation({ user }: NavigationProps) {
                   <Menu className="w-6 h-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-slate-950/95 border-slate-800 text-white backdrop-blur-xl">
-                <SheetHeader>
-                  <SheetTitle className="text-left text-white/90 flex items-center gap-2">
+              <SheetContent side="right" className="w-full sm:w-[350px] bg-slate-950/98 border-slate-800 text-white backdrop-blur-xl border-l-0 sm:border-l">
+                <SheetHeader className="text-left mb-6">
+                  <SheetTitle className="text-white/90 flex items-center gap-3 text-xl">
                     <Image
                       src="/compliai-logo-icon.png"
                       alt="CompliAI"
-                      width={30}
-                      height={30}
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-lg"
                     />
-                    <span>Menu</span>
+                    <span className="font-bold tracking-tight">CompliAI</span>
                   </SheetTitle>
                 </SheetHeader>
 
-                <div className="flex flex-col gap-6 mt-10">
+                <div className="flex flex-col h-full overflow-y-auto pb-8">
                   {user ? (
                     <>
-                      <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Account</span>
-                        <div className="bg-white/5 px-4 py-3 rounded-lg border border-white/10 mb-2">
-                          <div className="font-medium text-white">{user.name || "Benutzer"}</div>
-                          <div className="text-xs text-slate-400">{user.email}</div>
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Account</span>
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                            {user.name?.[0] || user.email[0].toUpperCase()}
+                          </div>
+                          <div className="overflow-hidden">
+                            <div className="font-bold text-white truncate">{user.name || "Benutzer"}</div>
+                            <div className="text-xs text-slate-400 truncate">{user.email}</div>
+                          </div>
                         </div>
 
-                        <Button asChild className="w-full justify-start bg-gradient-to-r from-cyan-500 to-blue-600 border-0">
+                        <Button asChild className="w-full justify-center text-base font-semibold h-12 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
                           <Link href="/dashboard">Zum Dashboard</Link>
                         </Button>
-                        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/10">
+                        <Button onClick={handleLogout} variant="outline" className="w-full justify-center text-base h-12 border-slate-700 text-slate-300 hover:text-white hover:bg-white/5 hover:border-slate-600">
                           Logout
                         </Button>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Starten</span>
-                        <Button asChild className="w-full justify-start text-lg h-12 bg-white text-slate-900 hover:bg-slate-200">
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Starten</span>
+                        <Button asChild className="w-full justify-center text-base font-semibold h-14 bg-white text-slate-950 hover:bg-slate-200 shadow-lg">
                           <Link href="/login">Login</Link>
                         </Button>
-                        <Button asChild className="w-full justify-start text-lg h-12 bg-gradient-to-r from-cyan-500 to-blue-600 border-0">
+                        <Button asChild className="w-full justify-center text-base font-semibold h-14 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
                           <Link href="/register">Kostenlos registrieren</Link>
                         </Button>
                       </div>

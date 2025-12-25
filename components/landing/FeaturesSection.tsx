@@ -299,7 +299,7 @@ export default function FeaturesSection({ content }: { content: any }) {
                             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                             exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
                             transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8"
+                            className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 pb-12"
                         >
                             {activeCategory?.items.map((item, index) => {
                                 const Icon = item.icon
