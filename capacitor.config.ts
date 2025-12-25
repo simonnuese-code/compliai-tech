@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'CompliAI',
   webDir: 'public',
   server: {
-    url: 'https://compliai.tech',
+    url: 'https://compliai.tech/mobile', // Point directly to mobile app
     allowNavigation: ['compliai.tech', '*.compliai.tech'],
     cleartext: true
   }

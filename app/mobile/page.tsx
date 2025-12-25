@@ -1,7 +1,7 @@
 'use client';
 
 import MobileNavBar from '@/components/mobile/MobileNavBar';
-import { Shield, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
+import { Shield, ArrowRight, Zap, CheckCircle2, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 
 export default function MobileHomePage() {
