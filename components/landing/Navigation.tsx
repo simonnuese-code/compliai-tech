@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
+import { Menu, CreditCard, LayoutGrid } from "lucide-react"
 
 interface NavigationProps {
   user?: { name?: string | null; email: string } | null;
@@ -176,7 +176,7 @@ export default function Navigation({ user }: NavigationProps) {
                     </>
                   ) : (
                     <>
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-3 px-2">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Starten</span>
                         <Button asChild className="w-full justify-center text-sm font-semibold h-11 bg-white text-slate-950 hover:bg-slate-200 shadow-lg">
                           <Link href="/login">Login</Link>
@@ -188,15 +188,27 @@ export default function Navigation({ user }: NavigationProps) {
                     </>
                   )}
 
-                  <div className="h-px bg-white/10 my-2" />
+                  <div className="h-px bg-white/10 my-6" />
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Links</span>
-                    <Button asChild variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10">
-                      <Link href="/pricing">Preise & Pläne</Link>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1 mb-2">Navigation</span>
+
+                    <Button asChild variant="ghost" className="w-full justify-start gap-4 text-slate-300 hover:text-white hover:bg-white/10 h-12 rounded-xl text-base font-medium px-4">
+                      <Link href="/pricing">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                          <CreditCard className="w-4 h-4" />
+                        </div>
+                        Preise & Pläne
+                      </Link>
                     </Button>
-                    <Button asChild variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10">
-                      <Link href="/#features">Features</Link>
+
+                    <Button asChild variant="ghost" className="w-full justify-start gap-4 text-slate-300 hover:text-white hover:bg-white/10 h-12 rounded-xl text-base font-medium px-4">
+                      <Link href="/#features">
+                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                          <LayoutGrid className="w-4 h-4" />
+                        </div>
+                        Platform Features
+                      </Link>
                     </Button>
                   </div>
                 </div>
