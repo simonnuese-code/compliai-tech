@@ -27,7 +27,14 @@ E Mail Adresse
 Unternehmensdaten  
 Passwort Hash
 
-### 4.2 Nutzungsdaten
+### 4.2 Single Sign-On (SSO) / Social Login
+Wir bieten Ihnen die Möglichkeit, sich mit Ihrem bestehenden Konto bei Drittanbietern (Google, GitHub, Apple) anzumelden ("Single Sign-On"). Wenn Sie diese Funktion nutzen, erhalten wir von dem jeweiligen Anbieter (auf Basis Ihrer Einwilligung) Zugriff auf bestimmte Profilinformationen, insbesondere Ihre E-Mail-Adresse und Ihren Namen. Wir nutzen diese Daten ausschließlich zur Erstellung und Verwaltung Ihres Benutzerkontos bei uns.
+
+*   **Google Sign-In:** Google Ireland Ltd., Gordon House, Barrow Street, Dublin 4, Irland. Weitere Infos: [Google Datenschutzerklärung](https://policies.google.com/privacy)
+*   **GitHub:** GitHub B.V., Prins Bernhardplein 200, 1097 JB Amsterdam, Niederlande. Weitere Infos: [GitHub Datenschutzerklärung](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement)
+*   **Sign in with Apple:** Apple Distribution International Ltd., Hollyhill Industrial Estate, Hollyhill, Cork, Irland. Weitere Infos: [Apple Datenschutzerklärung](https://www.apple.com/legal/privacy/en-ww/)
+
+### 4.3 Nutzungsdaten
 Datum der Registrierung  
 Logfiles der Serverumgebung  
 Zugriffsprotokolle  
