@@ -30,7 +30,7 @@ export default function HeroSection({ content }: HeroSectionProps) {
             variants={headlineReveal}
             initial="initial"
             animate="animate"
-            className="text-3xl md:text-[72px] font-extrabold leading-[1.1] tracking-tight text-slate-900 will-change-transform"
+            className="text-4xl md:text-[72px] font-extrabold leading-[1.1] tracking-tight text-slate-900 will-change-transform"
           >
             {headlineParts.length > 1 ? (
               <>

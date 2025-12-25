@@ -320,20 +320,20 @@ export default function SolutionSection({ content }: SolutionSectionProps) {
 
             <div className="space-y-8 relative">
               {/* Connecting Line - Perfectly Centered & Fixed Size */}
-              <div className="absolute left-6 top-[2px] h-[316px] w-[2px] -translate-x-1/2 bg-slate-200" />
+              <div className="absolute left-3 md:left-6 top-[2px] h-[316px] w-[2px] -translate-x-1/2 bg-slate-200" />
 
               {content.items.map((item, index) => {
                 const isActive = activePhase === index
                 return (
                   <div
                     key={item.title}
-                    className="relative pl-16 cursor-pointer group"
+                    className="relative pl-10 md:pl-16 cursor-pointer group"
                     onClick={() => handlePhaseClick(index)}
                   >
                     {/* Dot - Perfectly Centered on Line */}
                     <div
                       className={cn(
-                        "absolute left-6 top-2 w-3 h-3 -translate-x-1/2 rounded-full transition-all duration-500 z-10",
+                        "absolute left-3 md:left-6 top-2 w-3 h-3 -translate-x-1/2 rounded-full transition-all duration-500 z-10",
                         isActive
                           ? cn(colors[index], "shadow-[0_0_12px_rgba(0,0,0,0.2)] ring-2 ring-white/50")
                           : "bg-white border border-slate-300 group-hover:border-slate-400 group-hover:scale-110"

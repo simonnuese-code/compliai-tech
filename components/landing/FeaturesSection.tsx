@@ -182,10 +182,10 @@ export default function FeaturesSection({ content }: { content: any }) {
                 </div>
 
                 {/* Interactive Tabs */}
-                <div className="flex justify-center mb-16">
+                <div className="flex justify-center mb-16 w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
                     <div
                         ref={containerRef}
-                        className="inline-flex p-1.5 rounded-full bg-slate-950/50 border border-white/10 backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent]"
+                        className="inline-flex p-1.5 rounded-full bg-slate-950/50 border border-white/10 backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] min-w-fit mx-auto"
                     >
                         {/* Drag Hint Animation */}
                         <AnimatePresence>

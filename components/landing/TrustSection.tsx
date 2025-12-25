@@ -168,7 +168,7 @@ export default function TrustSection({ content }: TrustSectionProps) {
         <div className="w-full max-w-3xl mb-16 relative pt-8 pb-8">
 
           {/* Labels above slider */}
-          <div className="absolute top-0 left-0 w-full flex justify-between text-xs font-bold uppercase tracking-widest px-2 pointer-events-none opacity-60">
+          <div className="flex justify-between w-full mb-2 md:absolute md:top-0 md:left-0 md:mb-0 text-[10px] md:text-xs font-bold uppercase tracking-widest px-2 pointer-events-none opacity-60">
             <span className="text-rose-500">Was wir NICHT leisten</span>
             <span className="text-cyan-500">Was wir leisten</span>
           </div>

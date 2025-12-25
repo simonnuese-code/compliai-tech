@@ -5,6 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
 
 interface NavigationProps {
   user?: { name?: string | null; email: string } | null;
@@ -67,8 +69,8 @@ export default function Navigation({ user }: NavigationProps) {
             </div>
           </Link>
 
-          {/* Right: Auth Buttons */}
-          <div className="flex items-center gap-4">
+          {/* Right: Auth Buttons (Desktop) */}
+          <div className="hidden md:flex items-center gap-4">
             {/* Pricing Button */}
             <div className="mr-1 md:mr-2">
               <Button
@@ -115,6 +117,86 @@ export default function Navigation({ user }: NavigationProps) {
                 </Button>
               </>
             )}
+          </div>
+
+          {/* Mobile Menu (Hamburger) */}
+          <div className="flex md:hidden items-center gap-2">
+            <div className="mr-1">
+              <Button
+                asChild
+                variant="ghost"
+                className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-3 h-8 text-xs"
+              >
+                <Link href="/pricing">Preise</Link>
+              </Button>
+            </div>
+
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-slate-700">
+                  <Menu className="w-6 h-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-slate-950/95 border-slate-800 text-white backdrop-blur-xl">
+                <SheetHeader>
+                  <SheetTitle className="text-left text-white/90 flex items-center gap-2">
+                    <Image
+                      src="/compliai-logo-icon.png"
+                      alt="CompliAI"
+                      width={30}
+                      height={30}
+                      className="w-8 h-8 rounded-lg"
+                    />
+                    <span>Menu</span>
+                  </SheetTitle>
+                </SheetHeader>
+
+                <div className="flex flex-col gap-6 mt-10">
+                  {user ? (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Account</span>
+                        <div className="bg-white/5 px-4 py-3 rounded-lg border border-white/10 mb-2">
+                          <div className="font-medium text-white">{user.name || "Benutzer"}</div>
+                          <div className="text-xs text-slate-400">{user.email}</div>
+                        </div>
+
+                        <Button asChild className="w-full justify-start bg-gradient-to-r from-cyan-500 to-blue-600 border-0">
+                          <Link href="/dashboard">Zum Dashboard</Link>
+                        </Button>
+                        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/10">
+                          Logout
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Starten</span>
+                        <Button asChild className="w-full justify-start text-lg h-12 bg-white text-slate-900 hover:bg-slate-200">
+                          <Link href="/login">Login</Link>
+                        </Button>
+                        <Button asChild className="w-full justify-start text-lg h-12 bg-gradient-to-r from-cyan-500 to-blue-600 border-0">
+                          <Link href="/register">Kostenlos registrieren</Link>
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="h-px bg-white/10 my-2" />
+
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Links</span>
+                    <Button asChild variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10">
+                      <Link href="/pricing">Preise & Pläne</Link>
+                    </Button>
+                    <Button asChild variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10">
+                      <Link href="/#features">Features</Link>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
