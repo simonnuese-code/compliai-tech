@@ -33,9 +33,9 @@ const MockupAnalyse = () => (
       </div>
     </div>
 
-    <div className="flex flex-col md:flex-row gap-4 h-full">
+    <div className="flex gap-4 h-full">
       {/* Left Column: Risk & Data */}
-      <div className="w-full md:w-7/12 flex flex-col gap-4">
+      <div className="w-7/12 flex flex-col gap-4">
         {/* Risk Class Card */}
         <div className="flex-1 rounded-2xl bg-white/60 border border-white/50 p-5 flex flex-col justify-between relative overflow-hidden shadow-sm group hover:shadow-md transition-all">
           <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -48,7 +48,7 @@ const MockupAnalyse = () => (
           </div>
 
           <div className="z-10 space-y-1">
-            <div className="text-3xl md:text-4xl font-bold text-slate-800 leading-none tracking-tight">High</div>
+            <div className="text-4xl font-bold text-slate-800 leading-none tracking-tight">High</div>
             <div className="text-xs text-slate-500 font-medium">Requires Conformity Assessment</div>
           </div>
 
@@ -63,7 +63,7 @@ const MockupAnalyse = () => (
         </div>
 
         {/* Data Points Card */}
-        <div className="h-24 rounded-2xl bg-white/40 border border-white/40 p-4 flex flex-col justify-center gap-3 shadow-sm hidden md:flex">
+        <div className="h-24 rounded-2xl bg-white/40 border border-white/40 p-4 flex flex-col justify-center gap-3 shadow-sm flex">
           <div className="flex justify-between text-xs font-medium text-slate-500">
             <span>Confidence</span>
             <span className="text-cyan-600">98%</span>
@@ -79,7 +79,7 @@ const MockupAnalyse = () => (
       </div>
 
       {/* Right Column: Score & Trend */}
-      <div className="w-full md:w-5/12 flex flex-col gap-4">
+      <div className="w-5/12 flex flex-col gap-4">
         <div className="h-full rounded-2xl bg-gradient-to-b from-cyan-50/50 to-white/40 border border-cyan-100/50 p-4 flex flex-col items-center justify-center gap-4 shadow-sm relative overflow-hidden">
           {/* Background Trend Line */}
           <svg className="absolute inset-0 w-full h-full opacity-20 text-cyan-500" preserveAspectRatio="none">
@@ -87,10 +87,10 @@ const MockupAnalyse = () => (
           </svg>
 
           <div className="relative z-10">
-            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full border-8 border-white shadow-lg flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
+            <div className="w-28 h-28 rounded-full border-8 border-white shadow-lg flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold">85</div>
-                <div className="text-[9px] md:text-[10px] uppercase opacity-80 font-medium">Score</div>
+                <div className="text-3xl font-bold">85</div>
+                <div className="text-[10px] uppercase opacity-80 font-medium">Score</div>
               </div>
             </div>
             <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center border border-cyan-100">
@@ -393,7 +393,7 @@ export default function SolutionSection({ content }: SolutionSectionProps) {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className="w-full h-full scale-[0.8] sm:scale-100 origin-top-left"
+                    className="w-[155%] h-[155%] sm:w-full sm:h-full scale-[0.65] sm:scale-100 origin-top-left"
                   >
                     {activePhase === 0 && <MockupAnalyse />}
                     {activePhase === 1 && <MockupDokumentation />}
