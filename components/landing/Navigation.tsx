@@ -125,7 +125,7 @@ export default function Navigation({ user }: NavigationProps) {
               <Button
                 asChild
                 variant="ghost"
-                className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-3 h-8 text-xs"
+                className="bg-white/80 hover:bg-white text-slate-700 border border-slate-300/50 shadow-sm transition-all rounded-full px-4 h-9 text-xs font-medium"
               >
                 <Link href="/pricing">Preise</Link>
               </Button>
@@ -133,11 +133,11 @@ export default function Navigation({ user }: NavigationProps) {
 
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-slate-700">
-                  <Menu className="w-6 h-6" />
+                <Button variant="ghost" size="icon" className="bg-white/50 border border-white/20 text-slate-700 hover:bg-white/80 transition-all rounded-full w-9 h-9">
+                  <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:w-[350px] bg-slate-950/98 border-slate-800 text-white backdrop-blur-xl border-l-0 sm:border-l">
+              <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-slate-950/98 border-slate-800 text-white backdrop-blur-xl border-l-0 sm:border-l">
                 <SheetHeader className="text-left mb-6">
                   <SheetTitle className="text-white/90 flex items-center gap-3 text-xl">
                     <Image
@@ -166,10 +166,10 @@ export default function Navigation({ user }: NavigationProps) {
                           </div>
                         </div>
 
-                        <Button asChild className="w-full justify-center text-base font-semibold h-12 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
+                        <Button asChild className="w-full justify-center text-sm font-semibold h-10 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
                           <Link href="/dashboard">Zum Dashboard</Link>
                         </Button>
-                        <Button onClick={handleLogout} variant="outline" className="w-full justify-center text-base h-12 border-slate-700 text-slate-300 hover:text-white hover:bg-white/5 hover:border-slate-600">
+                        <Button onClick={handleLogout} variant="outline" className="w-full justify-center text-sm h-10 border-slate-700 text-slate-300 hover:text-white hover:bg-white/5 hover:border-slate-600">
                           Logout
                         </Button>
                       </div>
@@ -178,10 +178,10 @@ export default function Navigation({ user }: NavigationProps) {
                     <>
                       <div className="flex flex-col gap-3">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Starten</span>
-                        <Button asChild className="w-full justify-center text-base font-semibold h-14 bg-white text-slate-950 hover:bg-slate-200 shadow-lg">
+                        <Button asChild className="w-full justify-center text-sm font-semibold h-11 bg-white text-slate-950 hover:bg-slate-200 shadow-lg">
                           <Link href="/login">Login</Link>
                         </Button>
-                        <Button asChild className="w-full justify-center text-base font-semibold h-14 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
+                        <Button asChild className="w-full justify-center text-sm font-semibold h-11 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
                           <Link href="/register">Kostenlos registrieren</Link>
                         </Button>
                       </div>
