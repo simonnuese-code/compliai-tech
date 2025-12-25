@@ -150,7 +150,7 @@ export default function FeaturesSection({ content }: { content: any }) {
                 {/* Central Radial Glow - Spotlight Effect */}
                 <div
                     className={cn(
-                        "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[120px] transition-all duration-1000 opacity-40",
+                        "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] blur-[60px] md:w-[800px] md:h-[800px] md:blur-[120px] transition-all duration-1000 opacity-40",
                         activeTab === 'analyse' && "bg-cyan-600/30",
                         activeTab === 'dokumentation' && "bg-blue-600/30",
                         activeTab === 'zusammenarbeit' && "bg-indigo-600/30"
@@ -182,10 +182,10 @@ export default function FeaturesSection({ content }: { content: any }) {
                 </div>
 
                 {/* Interactive Tabs */}
-                <div className="flex justify-center mb-16 w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
+                <div className="flex justify-start md:justify-center mb-16 w-full overflow-x-auto px-4 pb-4 md:pb-0 no-scrollbar">
                     <div
                         ref={containerRef}
-                        className="inline-flex p-1.5 rounded-full bg-slate-950/50 border border-white/10 backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] min-w-fit mx-auto"
+                        className="inline-flex p-1.5 rounded-full bg-slate-950/90 border border-white/10 md:bg-slate-950/50 md:backdrop-blur-xl shadow-lg relative select-none touch-none [-webkit-tap-highlight-color:transparent] min-w-fit md:mx-auto"
                     >
                         {/* Drag Hint Animation */}
                         <AnimatePresence>
@@ -217,18 +217,17 @@ export default function FeaturesSection({ content }: { content: any }) {
                             style={{
                                 x,
                                 background: "linear-gradient(90deg, rgba(66, 199, 255, 0.9) 0%, rgba(24, 144, 255, 0.9) 50%, rgba(14, 91, 216, 0.9) 100%)",
-                                backdropFilter: "blur(18px) saturate(140%) brightness(1.1)"
+                                // Simplified backdrop filter for mobile performance
+                                backdropFilter: "none"
                             }}
                             initial={false}
                             animate={{
                                 width: tabDimensions[activeTab]?.width ?? 0,
                                 scale: isDragging ? 1 : [1, 1.03, 1],
-                                backdropFilter: isDragging ? "blur(22px) saturate(160%) brightness(1.2)" : "blur(18px) saturate(140%) brightness(1.1)"
                             }}
                             transition={{
                                 width: { type: "spring", stiffness: 300, damping: 30 },
                                 scale: { duration: 0.3, times: [0, 0.5, 1] },
-                                backdropFilter: { duration: 0.2 }
                             }}
                             drag="x"
                             dragConstraints={containerRef}
@@ -313,7 +312,7 @@ export default function FeaturesSection({ content }: { content: any }) {
                                         className="group relative h-full"
                                     >
                                         {/* Card Background - Liquid Glass */}
-                                        <div className="absolute inset-0 bg-slate-800/40 backdrop-blur-xl rounded-3xl border border-white/10 shadow-lg group-hover:shadow-cyan-500/10 group-hover:border-white/20 transition-all duration-300" />
+                                        <div className="absolute inset-0 bg-slate-800/80 md:bg-slate-800/40 backdrop-blur-md md:backdrop-blur-xl rounded-3xl border border-white/10 shadow-lg group-hover:shadow-cyan-500/10 group-hover:border-white/20 transition-all duration-300" />
 
                                         {/* Glow Effect on Hover */}
                                         <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
