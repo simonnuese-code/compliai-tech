@@ -33,6 +33,7 @@ model User {
   checks      ComplianceCheck[]
   tasks       Task[]
   documents   Document[]
+  flightTrackers FlightTracker[]
 
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
@@ -146,4 +147,141 @@ enum DocumentType {
   TECHNICAL_DOCS
   COMPLIANCE_REPORT
   OTHER
+}
+
+// ===========================================
+// FLUGTRACKER MODELS
+// ===========================================
+
+model Airport {
+  iataCode    String   @id @db.VarChar(3)
+  name        String
+  city        String
+  country     String
+  latitude    Decimal  @db.Decimal(10, 7)
+  longitude   Decimal  @db.Decimal(10, 7)
+  timezone    String?
+  
+  @@index([city])
+  @@index([country])
+  @@map("airports")
+}
+
+model FlightTracker {
+  id                       String   @id @default(cuid())
+  userId                   String
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name                     String
+  departureAirports        String[] // IATA Codes z.B. ["DUS", "FMO"]
+  departureRadiusKm        Int      @default(200)
+  destinationAirports      String[] // IATA Codes z.B. ["PVG", "SHA"]
+  
+  dateRangeStart           DateTime @db.Date
+  dateRangeEnd             DateTime @db.Date
+  tripDurationDays         Int
+  flexibility              FlexibilityType @default(EXACT)
+  
+  travelClass              TravelClass @default(ECONOMY)
+  luggageOption            LuggageOption @default(BOTH)
+  
+  reportFrequency          ReportFrequency @default(WEEKLY)
+  priceAlertThresholdPercent Int?
+  priceAlertThresholdEuro    Int?
+  
+  status                   TrackerStatus @default(ACTIVE)
+  
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  lastCheckedAt            DateTime?
+  
+  // Relations
+  flightResults            FlightResult[]
+  reports                  FlightReport[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([dateRangeEnd])
+  @@map("flight_trackers")
+}
+
+enum FlexibilityType {
+  EXACT
+  PLUS_MINUS_1
+  PLUS_MINUS_2
+}
+
+enum TravelClass {
+  ECONOMY
+  PREMIUM_ECONOMY
+  BUSINESS
+  FIRST
+}
+
+enum LuggageOption {
+  INCLUDED
+  HAND_ONLY
+  BOTH
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum TrackerStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+  EXPIRED
+}
+
+model FlightResult {
+  id                  String   @id @default(cuid())
+  trackerId           String
+  tracker             FlightTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  
+  checkedAt           DateTime @default(now())
+  departureAirport    String   @db.VarChar(3)
+  destinationAirport  String   @db.VarChar(3)
+  outboundDate        DateTime @db.Date
+  returnDate          DateTime @db.Date
+  priceEuro           Decimal  @db.Decimal(10, 2)
+  airline             String
+  stops               Int      @default(0)
+  totalDurationMinutes Int
+  luggageIncluded     Boolean  @default(false)
+  bookingLink         String?
+  source              String   // z.B. "kiwi", "skyscanner"
+  
+  // Raw data for deduplication
+  flightHash          String?  // Hash of flight details for dedup
+  
+  createdAt           DateTime @default(now())
+  
+  @@index([trackerId])
+  @@index([checkedAt])
+  @@index([priceEuro])
+  @@index([flightHash])
+  @@map("flight_results")
+}
+
+model FlightReport {
+  id          String   @id @default(cuid())
+  trackerId   String
+  tracker     FlightTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  
+  sentAt      DateTime @default(now())
+  reportType  FlightReportType
+  contentJson Json
+  
+  @@index([trackerId])
+  @@index([sentAt])
+  @@map("flight_reports")
+}
+
+enum FlightReportType {
+  SCHEDULED
+  PRICE_ALERT
 }

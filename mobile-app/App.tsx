@@ -1,4 +1,4 @@
-/// <reference types="nativewind/types" />
+
 import { StatusBar } from 'expo-status-bar';
 import { Text, View, Image, TouchableOpacity, SafeAreaView } from 'react-native';
 import { styled } from 'nativewind';
