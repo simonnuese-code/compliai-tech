@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { sendEmail } from '@/lib/email';
+import { sendGenericEmail } from '@/lib/email';
 import { z } from 'zod';
 
 const magicLinkSchema = z.object({
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const magicLinkUrl = `${baseUrl}/api/flugtracker/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
 
     // Send email
-    await sendEmail({
+    await sendGenericEmail({
       to: email,
       subject: 'Ihr Login-Link für FlugTracker',
       html: `

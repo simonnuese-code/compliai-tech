@@ -61,7 +61,7 @@ export async function sendPasswordResetEmail(email: string, token: string, name:
   }
 }
 
-export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+export async function sendGenericEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   try {
     await resend.emails.send({
       from: 'CompliAI <noreply@compliai.tech>',
