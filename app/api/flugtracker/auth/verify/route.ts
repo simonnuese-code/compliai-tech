@@ -44,8 +44,12 @@ export async function GET(request: NextRequest) {
 
     // Set session
     const session = await getSession();
-    session.userId = user.id;
-    session.email = user.email;
+    session.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    };
+    session.isLoggedIn = true;
     await session.save();
 
     // Redirect to dashboard

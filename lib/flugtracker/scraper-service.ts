@@ -1,14 +1,17 @@
 import { prisma } from '@/lib/prisma';
 import { FlightTracker } from '@prisma/client';
 import { KiwiScraper } from './scrapers/kiwi';
-import { ScraperSearchParams, ScrapedFlight } from './scrapers/types';
+import { ScraperSearchParams } from './scrapers/types';
 import { generateFlightHash } from './geo-utils';
+import { EmailService } from './email-service';
 
 export class ScraperService {
   private scrapers = [
     new KiwiScraper(),
     // Add Skyscanner/Kayak scrapers here later
   ];
+
+  private emailService = new EmailService();
 
   /**
    * Run scraping for a specific tracker
@@ -58,7 +61,7 @@ export class ScraperService {
 
       if (allResults.length === 0) {
         // Log checked even if no results
-         await prisma.flightTracker.update({
+        await prisma.flightTracker.update({
           where: { id: trackerId },
           data: { lastCheckedAt: new Date() }
         });
@@ -66,10 +69,6 @@ export class ScraperService {
       }
 
       // 4. Deduplicate and Process Results
-      // We only want to keep the NEWEST best offers.
-      // Strategy: Insert all new results. Dashboard shows latest ones.
-      // Clean up old results periodically (separate job).
-      
       const flightDataToInsert = allResults.map(flight => {
         const hash = generateFlightHash({
             departureAirport: flight.departureAirport,
@@ -108,43 +107,87 @@ export class ScraperService {
         where: { id: trackerId },
         data: { 
           lastCheckedAt: new Date(),
-          status: 'ACTIVE' // Ensure active
+          status: 'ACTIVE'
         }
       });
 
-      // 6. Check for Price Alerts (Basic Implementation)
+      // 6. Check for Price Alerts
       if (tracker.priceAlertThresholdEuro || tracker.priceAlertThresholdPercent) {
-        this.checkPriceAlerts(tracker, flightDataToInsert);
+        await this.checkPriceAlerts(tracker, flightDataToInsert);
       }
 
       console.log(`💾 Saved ${flightDataToInsert.length} flights for tracker ${tracker.name}`);
 
     } catch (error) {
       console.error(`❌ Error scraping tracker ${trackerId}:`, error);
-      // Optional update status to ERROR if multiple failures
       await prisma.flightTracker.update({
         where: { id: trackerId },
-        data: { status: 'ERROR' } // Or keep active but log error
+        data: { status: 'ERROR' }
       });
     }
   }
 
   private async checkPriceAlerts(tracker: FlightTracker, newFlights: any[]) {
-      const bestPrice = Math.min(...newFlights.map(f => f.priceEuro));
-      
-      // Simple logic: If best price < threshold -> trigger alert
-      // In real app: Check if we ALREADY alerted for this price recently to avoid spam.
-      
-      let shouldAlert = false;
-      
-      if (tracker.priceAlertThresholdEuro && bestPrice <= tracker.priceAlertThresholdEuro) {
-          shouldAlert = true;
-      }
-      
-      // TODO: Implement email sending trigger here
-      if (shouldAlert) {
-          console.log(`🚨 PRICE ALERT! Found flight for ${bestPrice}€ (Threshold met)`);
-          // triggerEmailAlert(tracker, bestFlight);
-      }
+    const bestPrice = Math.min(...newFlights.map(f => f.priceEuro));
+    
+    let shouldAlert = false;
+    
+    if (tracker.priceAlertThresholdEuro && bestPrice <= tracker.priceAlertThresholdEuro) {
+      shouldAlert = true;
+    }
+    
+    if (!shouldAlert) return;
+
+    // Prevent spam: check if we already sent a PRICE_ALERT report in the last 24h
+    const recentAlert = await prisma.flightReport.findFirst({
+      where: {
+        trackerId: tracker.id,
+        reportType: 'PRICE_ALERT',
+        sentAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+    });
+
+    if (recentAlert) {
+      console.log(`⏭️ Price alert already sent recently for tracker ${tracker.name}, skipping.`);
+      return;
+    }
+
+    // Get user email
+    const user = await prisma.user.findUnique({
+      where: { id: tracker.userId },
+    });
+
+    if (!user) return;
+
+    console.log(`🚨 PRICE ALERT! Found flight for ${bestPrice}€ (Threshold: ${tracker.priceAlertThresholdEuro}€)`);
+
+    try {
+      // Get top 5 cheapest flights for the alert email
+      const topFlights = await prisma.flightResult.findMany({
+        where: { trackerId: tracker.id },
+        orderBy: { priceEuro: 'asc' },
+        take: 5,
+      });
+
+      await this.emailService.sendFlightReport(user.email, {
+        tracker,
+        topFlights,
+        previousBestPrice: tracker.priceAlertThresholdEuro ?? undefined,
+      });
+
+      // Log the alert
+      await prisma.flightReport.create({
+        data: {
+          trackerId: tracker.id,
+          reportType: 'PRICE_ALERT',
+          contentJson: {
+            bestPrice: bestPrice.toString(),
+            threshold: tracker.priceAlertThresholdEuro?.toString(),
+          },
+        },
+      });
+    } catch (err) {
+      console.error(`❌ Failed to send price alert for tracker ${tracker.name}:`, err);
+    }
   }
 }

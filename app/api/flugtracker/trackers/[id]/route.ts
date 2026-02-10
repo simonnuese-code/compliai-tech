@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
+import { createTrackerApiSchema } from '@/lib/flugtracker/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,7 +16,7 @@ export async function GET(
     const session = await getSession();
     const { id } = await params;
     
-    if (!session.userId) {
+    if (!session.user?.id) {
       return NextResponse.json(
         { error: 'Nicht autorisiert' },
         { status: 401 }
@@ -25,7 +26,7 @@ export async function GET(
     const tracker = await prisma.flightTracker.findFirst({
       where: {
         id,
-        userId: session.userId,
+        userId: session.user.id,
       },
       include: {
         flightResults: {
@@ -65,7 +66,7 @@ export async function PUT(
     const session = await getSession();
     const { id } = await params;
     
-    if (!session.userId) {
+    if (!session.user?.id) {
       return NextResponse.json(
         { error: 'Nicht autorisiert' },
         { status: 401 }
@@ -76,7 +77,7 @@ export async function PUT(
     const existingTracker = await prisma.flightTracker.findFirst({
       where: {
         id,
-        userId: session.userId,
+        userId: session.user.id,
       },
     });
 
@@ -88,23 +89,34 @@ export async function PUT(
     }
 
     const body = await request.json();
+    
+    // Validate input with partial schema (all fields optional for update)
+    const validationResult = createTrackerApiSchema.partial().safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Ungültige Eingaben', details: validationResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const validatedData = validationResult.data;
 
     const tracker = await prisma.flightTracker.update({
       where: { id },
       data: {
-        name: body.name,
-        departureAirports: body.departureAirports,
-        departureRadiusKm: body.departureRadiusKm,
-        destinationAirports: body.destinationAirports,
-        dateRangeStart: body.dateRangeStart ? new Date(body.dateRangeStart) : undefined,
-        dateRangeEnd: body.dateRangeEnd ? new Date(body.dateRangeEnd) : undefined,
-        tripDurationDays: body.tripDurationDays,
-        flexibility: body.flexibility,
-        travelClass: body.travelClass,
-        luggageOption: body.luggageOption,
-        reportFrequency: body.reportFrequency,
-        priceAlertThresholdPercent: body.priceAlertThresholdPercent,
-        priceAlertThresholdEuro: body.priceAlertThresholdEuro,
+        name: validatedData.name,
+        departureAirports: validatedData.departureAirports,
+        departureRadiusKm: validatedData.departureRadiusKm,
+        destinationAirports: validatedData.destinationAirports,
+        dateRangeStart: validatedData.dateRangeStart ? new Date(validatedData.dateRangeStart) : undefined,
+        dateRangeEnd: validatedData.dateRangeEnd ? new Date(validatedData.dateRangeEnd) : undefined,
+        tripDurationDays: validatedData.tripDurationDays,
+        flexibility: validatedData.flexibility,
+        travelClass: validatedData.travelClass,
+        luggageOption: validatedData.luggageOption,
+        reportFrequency: validatedData.reportFrequency,
+        priceAlertThresholdPercent: validatedData.priceAlertThresholdPercent,
+        priceAlertThresholdEuro: validatedData.priceAlertThresholdEuro,
       },
     });
 
@@ -127,7 +139,7 @@ export async function DELETE(
     const session = await getSession();
     const { id } = await params;
     
-    if (!session.userId) {
+    if (!session.user?.id) {
       return NextResponse.json(
         { error: 'Nicht autorisiert' },
         { status: 401 }
@@ -138,7 +150,7 @@ export async function DELETE(
     const existingTracker = await prisma.flightTracker.findFirst({
       where: {
         id,
-        userId: session.userId,
+        userId: session.user.id,
       },
     });
 

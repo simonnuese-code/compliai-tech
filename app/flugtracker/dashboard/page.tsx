@@ -8,18 +8,14 @@ import {
     Plane,
     Plus,
     Clock,
-    TrendingDown,
-    TrendingUp,
     Pause,
     Play,
     Trash2,
-    Edit,
     Settings,
     LogOut,
     Calendar,
     MapPin,
     Loader2,
-    AlertCircle,
     ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -181,14 +177,6 @@ export default function FlugTrackerDashboard() {
                                 align="end"
                                 className="border-slate-700 bg-slate-800"
                             >
-                                <DropdownMenuItem
-                                    className="text-slate-300 focus:bg-white/10 focus:text-white"
-                                    onClick={() => router.push('/flugtracker/settings')}
-                                >
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    Einstellungen
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-slate-700" />
                                 <DropdownMenuItem
                                     className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
                                     onClick={handleLogout}
@@ -353,15 +341,7 @@ function TrackerCard({
                                     Details anzeigen
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href={`/flugtracker/tracker/${tracker.id}/edit`}
-                                    className="flex items-center text-slate-300 focus:bg-white/10 focus:text-white"
-                                >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Bearbeiten
-                                </Link>
-                            </DropdownMenuItem>
+
                             <DropdownMenuItem
                                 className="text-slate-300 focus:bg-white/10 focus:text-white"
                                 onClick={() => onPauseResume(tracker.id, tracker.status)}

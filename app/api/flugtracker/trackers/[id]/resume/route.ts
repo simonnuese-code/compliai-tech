@@ -15,7 +15,7 @@ export async function POST(
     const session = await getSession();
     const { id } = await params;
     
-    if (!session.userId) {
+    if (!session.user?.id) {
       return NextResponse.json(
         { error: 'Nicht autorisiert' },
         { status: 401 }
@@ -26,7 +26,7 @@ export async function POST(
     const existingTracker = await prisma.flightTracker.findFirst({
       where: {
         id,
-        userId: session.userId,
+        userId: session.user.id,
       },
     });
 

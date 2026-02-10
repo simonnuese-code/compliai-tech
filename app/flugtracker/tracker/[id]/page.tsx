@@ -17,7 +17,6 @@ import {
     Pause,
     Play,
     Trash2,
-    Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,15 +135,32 @@ export default function TrackerDetailsPage() {
 
     const handleManualCheck = async () => {
         toast.promise(
-            fetch(`/api/cron/scrape?trackerId=${id}`, { method: 'POST' }),
+            fetch(`/api/flugtracker/trackers/${id}/scrape`, { method: 'POST' }).then(async (res) => {
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Fehler bei der Suche');
+                }
+            }),
             {
                 loading: 'Suche Flüge...',
                 success: 'Suche abgeschlossen! Seite wird aktualisiert.',
-                error: 'Fehler bei der Suche',
+                error: (err) => err.message || 'Fehler bei der Suche',
             }
         );
         // Reload after a delay to show new results
-        setTimeout(fetchTrackerDetails, 5000);
+        setTimeout(fetchTrackerDetails, 3000);
+    };
+
+    const handleDelete = async () => {
+        if (!confirm('Möchten Sie diesen Tracker wirklich löschen?')) return;
+        try {
+            const res = await fetch(`/api/flugtracker/trackers/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Fehler beim Löschen');
+            toast.success('Tracker gelöscht');
+            router.push('/flugtracker/dashboard');
+        } catch (error) {
+            toast.error('Fehler beim Löschen des Trackers');
+        }
     };
 
     if (isLoading) {
@@ -242,9 +258,6 @@ export default function TrackerDetailsPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="border-slate-700 bg-slate-800">
-                                <DropdownMenuItem onClick={() => router.push(`/flugtracker/tracker/${id}/edit`)} className="focus:bg-white/10">
-                                    <Edit className="mr-2 h-4 w-4" /> Bearbeiten
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handlePauseResume} className="focus:bg-white/10">
                                     {tracker.status === 'ACTIVE' ? (
                                         <>
@@ -257,7 +270,7 @@ export default function TrackerDetailsPage() {
                                     )}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator className="bg-slate-700" />
-                                <DropdownMenuItem className="text-red-400 focus:bg-red-500/10 focus:text-red-400">
+                                <DropdownMenuItem onClick={handleDelete} className="text-red-400 focus:bg-red-500/10 focus:text-red-400">
                                     <Trash2 className="mr-2 h-4 w-4" /> Löschen
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const session = await getSession();
     
-    if (!session.userId) {
+    if (!session.user?.id) {
       return NextResponse.json(
         { error: 'Nicht autorisiert' },
         { status: 401 }
@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     const trackers = await prisma.flightTracker.findMany({
-      where: { userId: session.userId },
+      where: { userId: session.user.id },
       include: {
         flightResults: {
           orderBy: { priceEuro: 'asc' },
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     
-    if (!session.userId) {
+    if (!session.user?.id) {
       return NextResponse.json(
         { error: 'Nicht autorisiert' },
         { status: 401 }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // Create tracker
     const tracker = await prisma.flightTracker.create({
       data: {
-        userId: session.userId,
+        userId: session.user.id,
         name: validatedData.name,
         departureAirports: validatedData.departureAirports,
         departureRadiusKm: validatedData.departureRadiusKm,
