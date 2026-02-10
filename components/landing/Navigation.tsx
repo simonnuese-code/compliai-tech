@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Menu, CreditCard, LayoutGrid } from "lucide-react"
+import { Menu, CreditCard, LayoutGrid, Plane } from "lucide-react"
 
 interface NavigationProps {
   user?: { name?: string | null; email: string } | null;
@@ -71,14 +71,23 @@ export default function Navigation({ user }: NavigationProps) {
 
           {/* Right: Auth Buttons (Desktop) */}
           <div className="hidden md:flex items-center gap-4">
-            {/* Pricing Button */}
-            <div className="mr-1 md:mr-2">
+            {/* Nav Buttons */}
+            <div className="mr-1 md:mr-2 flex items-center gap-2">
               <Button
                 asChild
                 className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-3 py-2 text-xs h-auto md:px-6 md:py-2.5 md:text-sm"
               >
                 <Link href="/pricing">
                   Preise
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-white/50 hover:bg-white/80 text-slate-700 border border-slate-200 shadow-sm transition-all rounded-full px-3 py-2 text-xs h-auto md:px-6 md:py-2.5 md:text-sm"
+              >
+                <Link href="/flugtracker">
+                  <Plane className="w-3.5 h-3.5 mr-1.5" />
+                  FlugTracker
                 </Link>
               </Button>
             </div>
@@ -121,13 +130,23 @@ export default function Navigation({ user }: NavigationProps) {
 
           {/* Mobile Menu (Hamburger) */}
           <div className="flex md:hidden items-center gap-2">
-            <div className="mr-1">
+            <div className="mr-1 flex items-center gap-1.5">
               <Button
                 asChild
                 variant="ghost"
                 className="bg-white/80 hover:bg-white text-slate-700 border border-slate-300/50 shadow-sm transition-all rounded-full px-4 h-9 text-xs font-medium"
               >
                 <Link href="/pricing">Preise</Link>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                className="bg-white/80 hover:bg-white text-slate-700 border border-slate-300/50 shadow-sm transition-all rounded-full px-3 h-9 text-xs font-medium"
+              >
+                <Link href="/flugtracker">
+                  <Plane className="w-3 h-3 mr-1" />
+                  Tracker
+                </Link>
               </Button>
             </div>
 
@@ -192,6 +211,15 @@ export default function Navigation({ user }: NavigationProps) {
 
                   <div className="flex flex-col gap-2 px-2">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1 mb-2">Navigation</span>
+
+                    <Button asChild variant="ghost" className="w-full justify-start gap-4 text-slate-300 hover:text-white hover:bg-white/10 h-12 rounded-xl text-base font-medium px-4">
+                      <Link href="/flugtracker">
+                        <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
+                          <Plane className="w-4 h-4" />
+                        </div>
+                        FlugTracker
+                      </Link>
+                    </Button>
 
                     <Button asChild variant="ghost" className="w-full justify-start gap-4 text-slate-300 hover:text-white hover:bg-white/10 h-12 rounded-xl text-base font-medium px-4">
                       <Link href="/pricing">
