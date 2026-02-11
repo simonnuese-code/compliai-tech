@@ -767,6 +767,15 @@ function Step3DateRange({
                                 onSelect={(date) => updateFormData({ dateRangeStart: date })}
                                 disabled={(date) => date < new Date()}
                                 initialFocus
+                                locale={de}
+                                className="bg-slate-900 text-slate-100 rounded-md"
+                                classNames={{
+                                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-slate-700 text-slate-100 data-[selected=true]:bg-sky-500 data-[selected=true]:text-white data-[today=true]:bg-slate-700 data-[today=true]:text-white",
+                                    day_disabled: "text-slate-600 opacity-50 hover:bg-transparent",
+                                    head_cell: "text-slate-400 w-9 font-normal text-[0.8rem]",
+                                    caption: "flex justify-center pt-1 relative items-center text-slate-100",
+                                    nav_button: "border border-slate-700 hover:bg-slate-700 hover:text-white text-slate-400",
+                                }}
                             />
                         </PopoverContent>
                     </Popover>
@@ -800,6 +809,15 @@ function Step3DateRange({
                                     (formData.dateRangeStart ? date <= formData.dateRangeStart : false)
                                 }
                                 initialFocus
+                                locale={de}
+                                className="bg-slate-900 text-slate-100 rounded-md"
+                                classNames={{
+                                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-slate-700 text-slate-100 data-[selected=true]:bg-sky-500 data-[selected=true]:text-white data-[today=true]:bg-slate-700 data-[today=true]:text-white",
+                                    day_disabled: "text-slate-600 opacity-50 hover:bg-transparent",
+                                    head_cell: "text-slate-400 w-9 font-normal text-[0.8rem]",
+                                    caption: "flex justify-center pt-1 relative items-center text-slate-100",
+                                    nav_button: "border border-slate-700 hover:bg-slate-700 hover:text-white text-slate-400",
+                                }}
                             />
                         </PopoverContent>
                     </Popover>
