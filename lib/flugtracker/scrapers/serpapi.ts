@@ -121,9 +121,20 @@ export class SerpApiScraper implements FlightScraper {
     // Combine best_flights and other_flights
     const bestFlights = data.best_flights || [];
     const otherFlights = data.other_flights || [];
-    const allRawFlights = [...bestFlights, ...otherFlights];
+    
+    // Prioritize best flights, then append cheapest other flights
+    // Limit to top 10 total to prevent overwhelming the user/DB
+    let allRawFlights = [...bestFlights];
+    
+    // Sort other flights by price just in case
+    const sortedOther = otherFlights.sort((a: any, b: any) => (a.price || 99999) - (b.price || 99999));
+    
+    allRawFlights = [...allRawFlights, ...sortedOther];
+    
+    // Take top 10
+    const limitedFlights = allRawFlights.slice(0, 10);
 
-    return this.transformResults(allRawFlights, origin, destination, outboundDate, returnDate);
+    return this.transformResults(limitedFlights, origin, destination, outboundDate, returnDate);
   }
 
   private transformResults(results: any[], originParam: string, destinationParam: string, outboundDateStr: string, returnDateStr: string): ScrapedFlight[] {
