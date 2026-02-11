@@ -223,8 +223,6 @@ export default function TrackerDetailsPage() {
         );
     }
 
-    const bestPrice = tracker.flightResults[0]?.priceEuro;
-    const previousPrice = tracker.flightResults[1]?.priceEuro;
     const priceTrend =
         bestPrice && previousPrice
             ? ((bestPrice - previousPrice) / previousPrice) * 100
