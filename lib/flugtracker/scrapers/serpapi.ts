@@ -157,8 +157,8 @@ export class SerpApiScraper implements FlightScraper {
 
         const price = flight.price || 0;
 
-        // Use the actual found airports for the deep link to be specific
-        const bookingLink = `https://www.google.com/travel/flights?q=Flights%20to%20${actualDestination}%20from%20${actualDeparture}%20on%20${outboundDateStr}%20returning%20${returnDateStr}`;
+        // Google Flights deep link format: #flt=ORIGIN.DEST.DATE*DEST.ORIGIN.RETURN_DATE
+        const bookingLink = `https://www.google.com/travel/flights?hl=de&curr=EUR#flt=${actualDeparture}.${actualDestination}.${outboundDateStr}*${actualDestination}.${actualDeparture}.${returnDateStr}`;
 
         return {
             departureAirport: actualDeparture,
