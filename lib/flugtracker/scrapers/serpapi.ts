@@ -16,36 +16,40 @@ export class SerpApiScraper implements FlightScraper {
     }
 
     try {
-      console.log(`✈️ SerpApi: Searching for ${params.departureAirports.join(',')} → ${params.destinationAirports.join(',')}`);
+      console.log(`✈️ SerpApi: Searching for ${params.departureAirports.length} origins → ${params.destinationAirports.length} destinations`);
 
       const allFlights: ScrapedFlight[] = [];
       const searchPromises: Promise<ScrapedFlight[]>[] = [];
 
-      // Google Flights via SerpApi works best with single origin/destination pairs
-      for (const dep of params.departureAirports) {
-        for (const dest of params.destinationAirports) {
-          
-          // Determine dates to check
-          // To save API credits (100/month limit), we should be careful.
-          // Strategy: Check ONLY the primary date range start/end for now?
-          // Or check a few combinations if flexibility is set?
-          // Since the user has 100 credits, we should probably do ONE search per tracker run per route?
-          // Let's stick to the EXACT dateRangeStart and tripDuration for now to minimize calls.
-          // If flexibility is high, we might miss deals, but we save credits.
-          // User can change the dates in the tracker if they want to check others.
-          
-          const outboundDate = this.formatDate(params.dateRangeStart);
-          const returnDateObj = new Date(params.dateRangeStart);
-          returnDateObj.setDate(returnDateObj.getDate() + params.tripDurationDays);
-          const returnDate = this.formatDate(returnDateObj);
+      // Google Flights via SerpApi allows comma-separated airport codes
+      // But let's batch them to avoid hitting URL length limits or Google limits (usually ~5-7)
+      const BATCH_SIZE = 5;
 
-          searchPromises.push(
-            this.searchSingle(dep, dest, outboundDate, returnDate, params)
-              .catch(err => {
-                console.error(`SerpApi search failed for ${dep}->${dest}:`, err.message);
-                return [];
-              })
-          );
+      const depBatches = this.chunkArray(params.departureAirports, BATCH_SIZE);
+      const destBatches = this.chunkArray(params.destinationAirports, BATCH_SIZE);
+
+      const outboundDate = this.formatDate(params.dateRangeStart);
+      const returnDateObj = new Date(params.dateRangeStart);
+      returnDateObj.setDate(returnDateObj.getDate() + params.tripDurationDays);
+      const returnDate = this.formatDate(returnDateObj);
+
+      for (const depBatch of depBatches) {
+        for (const destBatch of destBatches) {
+            const depString = depBatch.join(',');
+            const destString = destBatch.join(',');
+
+            searchPromises.push(
+                this.searchSingle(depString, destString, outboundDate, returnDate, params)
+                  .catch(err => {
+                    console.error(`SerpApi search failed for ${depString}->${destString}:`, err.message);
+                    return [];
+                  })
+            );
+            
+            // Add a small delay to prevent immediate rate limit if multiple batches
+            if (depBatches.length * destBatches.length > 1) {
+                await new Promise(r => setTimeout(r, 500));
+            }
         }
       }
 
@@ -61,6 +65,14 @@ export class SerpApiScraper implements FlightScraper {
       console.error('❌ SerpApi search failed:', error);
       return [];
     }
+  }
+
+  private chunkArray(array: string[], size: number): string[][] {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
   }
 
   private async searchSingle(
@@ -114,14 +126,16 @@ export class SerpApiScraper implements FlightScraper {
     return this.transformResults(allRawFlights, origin, destination, outboundDate, returnDate);
   }
 
-  private transformResults(results: any[], origin: string, destination: string, outboundDateStr: string, returnDateStr: string): ScrapedFlight[] {
+  private transformResults(results: any[], originParam: string, destinationParam: string, outboundDateStr: string, returnDateStr: string): ScrapedFlight[] {
     return results.map(flight => {
-        // flights array contains segments.
-        // Usually for a round trip search, the first segment group is outbound?
-        // SerpApi structure for round trip often groups the whole trip info
-        
         const firstSegment = flight.flights?.[0];
+        const lastSegment = flight.flights?.[flight.flights.length - 1]; // Last segment of outbound leg?
+
         if (!firstSegment) return null;
+
+        // Extract actual airport codes from the result
+        const actualDeparture = firstSegment.departure_airport?.id || originParam.split(',')[0]; // Fallback to first requested
+        const actualDestination = lastSegment?.arrival_airport?.id || destinationParam.split(',')[0];
 
         const airline = flight.airline_logo 
             ? (firstSegment.airline || 'Multiple Airlines') 
@@ -130,33 +144,22 @@ export class SerpApiScraper implements FlightScraper {
         // Total duration is in minutes
         const duration = flight.total_duration || 0;
 
-        // Price
         const price = flight.price || 0;
 
-        // Stops: Check all segments. If flights array length > 1, it's a connecting flight?
-        // Wait, for round trip, usually `flights` contains segments of the *first leg*?
-        // Or all segments of the whole trip?
-        // SerpApi documentation is a bit vague on "flights" array for round trip paired results.
-        // Usually `flights` lists the segments of the itinerary displayed.
-        // If it's a paired result, it might have `flights` (outbound) and `return_flights`?
-        // Or just one list.
-        // Let's assume `flights.length - 1` is roughly the number of stops if it's a single leg view.
-        // If it represents the whole round trip, it's harder.
-        // Let's just create a generic link to Google Flights.
-
-        const bookingLink = `https://www.google.com/travel/flights?q=Flights%20to%20${destination}%20from%20${origin}%20on%20${outboundDateStr}%20returning%20${returnDateStr}`;
+        // Use the actual found airports for the deep link to be specific
+        const bookingLink = `https://www.google.com/travel/flights?q=Flights%20to%20${actualDestination}%20from%20${actualDeparture}%20on%20${outboundDateStr}%20returning%20${returnDateStr}`;
 
         return {
-            departureAirport: origin,
-            destinationAirport: destination,
+            departureAirport: actualDeparture,
+            destinationAirport: actualDestination,
             outboundDate: new Date(outboundDateStr),
             returnDate: new Date(returnDateStr),
             priceEuro: price,
             airline: airline,
-            stops: flight.flights.length > 1 ? flight.flights.length - 1 : 0, // Approximate
+            stops: flight.flights.length > 1 ? flight.flights.length - 1 : 0, 
             totalDurationMinutes: duration,
-            luggageIncluded: false, // SerpApi doesn't easily expose this in the summary
-            bookingLink: bookingLink, // Generic link to search
+            luggageIncluded: false, 
+            bookingLink: bookingLink, 
             source: 'Google Flights',
         } as ScrapedFlight;
 
