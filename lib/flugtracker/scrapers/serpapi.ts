@@ -157,8 +157,8 @@ export class SerpApiScraper implements FlightScraper {
 
         const price = flight.price || 0;
 
-        // Google Flights deep link format: #flt=ORIGIN.DEST.DATE*DEST.ORIGIN.RETURN_DATE
-        const bookingLink = `https://www.google.com/travel/flights?hl=de&curr=EUR#flt=${actualDeparture}.${actualDestination}.${outboundDateStr}*${actualDestination}.${actualDeparture}.${returnDateStr}`;
+        // Build a proper Google Flights deep link with tfs protobuf parameter
+        const bookingLink = this.buildGoogleFlightsUrl(actualDeparture, actualDestination, outboundDateStr, returnDateStr);
 
         return {
             departureAirport: actualDeparture,
@@ -175,6 +175,58 @@ export class SerpApiScraper implements FlightScraper {
         } as ScrapedFlight;
 
     }).filter(Boolean) as ScrapedFlight[];
+  }
+
+  /**
+   * Build a Google Flights deep link URL using the protobuf-encoded `tfs` parameter.
+   * This is the format Google Flights actually uses for search result URLs.
+   */
+  private buildGoogleFlightsUrl(origin: string, destination: string, outboundDate: string, returnDate: string): string {
+    // Protobuf wire format helpers
+    const encodeVarint = (value: number): number[] => {
+      const bytes: number[] = [];
+      while (value > 0x7f) {
+        bytes.push((value & 0x7f) | 0x80);
+        value >>>= 7;
+      }
+      bytes.push(value & 0x7f);
+      return bytes;
+    };
+
+    const tag = (fieldNumber: number, wireType: number): number[] =>
+      encodeVarint((fieldNumber << 3) | wireType);
+
+    const varintField = (fieldNumber: number, value: number): number[] =>
+      [...tag(fieldNumber, 0), ...encodeVarint(value)];
+
+    const stringField = (fieldNumber: number, value: string): number[] => {
+      const encoded = new TextEncoder().encode(value);
+      return [...tag(fieldNumber, 2), ...encodeVarint(encoded.length), ...Array.from(encoded)];
+    };
+
+    const messageField = (fieldNumber: number, content: number[]): number[] =>
+      [...tag(fieldNumber, 2), ...encodeVarint(content.length), ...content];
+
+    // Airport message: { field1: 1 (IATA type), field2: "CODE" }
+    const airport = (code: string): number[] =>
+      [...varintField(1, 1), ...stringField(2, code)];
+
+    // Leg message: { field2: date, field13: origin, field14: destination }
+    const leg = (date: string, from: string, to: string): number[] =>
+      [...stringField(2, date), ...messageField(13, airport(from)), ...messageField(14, airport(to))];
+
+    // Root message: { field1: 28, field2: 2 (round trip), field3: outbound_leg, field3: return_leg }
+    const tfs = new Uint8Array([
+      ...varintField(1, 28),
+      ...varintField(2, 2),
+      ...messageField(3, leg(outboundDate, origin, destination)),
+      ...messageField(3, leg(returnDate, destination, origin)),
+    ]);
+
+    // Base64url encode
+    const base64 = Buffer.from(tfs).toString('base64url');
+
+    return `https://www.google.com/travel/flights/search?tfs=${base64}&curr=EUR&hl=de`;
   }
 
   private formatDate(date: Date): string {
