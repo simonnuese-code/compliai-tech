@@ -78,15 +78,56 @@ export default function TrackerDetailsPage() {
     const [tracker, setTracker] = useState<TrackerDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Mock chart data - in a real app this would be aggregated from history
-    const chartData = tracker?.flightResults
-        .slice()
-        .reverse()
-        .map((result) => ({
-            date: format(new Date(result.checkedAt), 'dd.MM', { locale: de }),
-            price: result.priceEuro,
+    // Sort all results by date (newest first), then price (cheapest first)
+    const allSortedResults = [...(tracker?.flightResults || [])].sort((a, b) => {
+        const dateA = new Date(a.checkedAt).getTime();
+        const dateB = new Date(b.checkedAt).getTime();
+        // Group by scrape time (approx 1 min window)
+        if (Math.abs(dateA - dateB) > 60000) {
+            return dateB - dateA;
+        }
+        return a.priceEuro - b.priceEuro;
+    });
+
+    // Determine the latest scrape batch time
+    const latestBatchTime = allSortedResults[0]?.checkedAt
+        ? new Date(allSortedResults[0].checkedAt).getTime()
+        : 0;
+
+    // Filter flights to only show the ones from the latest scrape
+    const latestFlights = allSortedResults.filter(f =>
+        Math.abs(new Date(f.checkedAt).getTime() - latestBatchTime) < 60000
+    );
+
+    // Prepare chart data: Lowest price per scrape event, historical order
+    // Group by scrape time
+    const scrapes = new Map<string, number>();
+    tracker?.flightResults.forEach(r => {
+        const timeKey = new Date(r.checkedAt).toISOString().slice(0, 16); // Minute precision
+        const currentMin = scrapes.get(timeKey);
+        if (!currentMin || r.priceEuro < currentMin) {
+            scrapes.set(timeKey, r.priceEuro);
+        }
+    });
+
+    const chartData = Array.from(scrapes.entries())
+        .map(([dateStr, price]) => ({
+            date: format(new Date(dateStr), 'dd.MM', { locale: de }),
+            fullDate: new Date(dateStr), // for sorting
+            price,
         }))
-        .slice(-10); // Last 10 points
+        .sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime())
+        .slice(-20); // Last 20 data points
+
+    const bestPrice = latestFlights[0]?.priceEuro;
+
+    // Previous batch price for trend?
+    // tough to get accurately without complex logic, let's simplify trend to standard deviation or just vs previous check
+    // Find previous batch
+    const previousBatchFlight = allSortedResults.find(f =>
+        Math.abs(new Date(f.checkedAt).getTime() - latestBatchTime) > 60000
+    );
+    const previousPrice = previousBatchFlight?.priceEuro;
 
     useEffect(() => {
         fetchTrackerDetails();
@@ -148,7 +189,7 @@ export default function TrackerDetailsPage() {
             }
         );
         // Reload after a delay to show new results
-        setTimeout(fetchTrackerDetails, 3000);
+        setTimeout(fetchTrackerDetails, 5000); // Give it a bit more time for cold start
     };
 
     const handleDelete = async () => {
@@ -313,7 +354,7 @@ export default function TrackerDetailsPage() {
                             <CardTitle className="text-sm font-medium text-slate-400">Gefundene Flüge</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-white">{tracker.flightResults.length}</div>
+                            <div className="text-3xl font-bold text-white">{latestFlights.length}</div>
                         </CardContent>
                     </Card>
 
@@ -364,7 +405,7 @@ export default function TrackerDetailsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {tracker.flightResults.map((flight) => (
+                                {latestFlights.map((flight) => (
                                     <tr key={flight.id} className="group hover:bg-slate-800/30">
                                         <td className="px-4 py-3">
                                             <div className="font-medium text-white">{flight.airline}</div>
@@ -398,7 +439,7 @@ export default function TrackerDetailsPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {tracker.flightResults.length === 0 && (
+                                {latestFlights.length === 0 && (
                                     <tr>
                                         <td colSpan={6} className="py-8 text-center text-slate-500">
                                             Keine Flüge gefunden. Starten Sie eine Suche!
