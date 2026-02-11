@@ -85,7 +85,7 @@ export default function Dashboard() {
                         </StyledView>
                         <StyledView className="flex-1">
                             <StyledText className="font-bold text-slate-900 text-base">Neuen Check starten</StyledText>
-                            <StyledText className="text-slate-500 text-xs mt-0.5">Prüfen Sie ein neues KI-System in < 2 Min.</StyledText>
+                            <StyledText className="text-slate-500 text-xs mt-0.5">Prüfen Sie ein neues KI-System in {'<'} 2 Min.</StyledText>
                         </StyledView>
                     </StyledView>
 
