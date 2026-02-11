@@ -1,14 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { FlightTracker } from '@prisma/client';
-import { KiwiScraper } from './scrapers/kiwi';
+import { SerpApiScraper } from './scrapers/serpapi';
 import { ScraperSearchParams } from './scrapers/types';
 import { generateFlightHash } from './geo-utils';
 import { EmailService } from './email-service';
 
 export class ScraperService {
   private scrapers = [
-    new KiwiScraper(),
-    // Add Skyscanner/Kayak scrapers here later
+    new SerpApiScraper(),
   ];
 
   private emailService = new EmailService();
