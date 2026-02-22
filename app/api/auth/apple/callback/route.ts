@@ -16,10 +16,17 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const code = formData.get("code") as string | null;
     const id_token = formData.get("id_token") as string | null;
-    const userJson = formData.get("user") as string | null; // "user" field only sent on first login
+    const userJson = formData.get("user") as string | null;
+    const state = formData.get("state") as string | null;
 
     if (!code || !id_token) {
       return NextResponse.json({ error: "Missing code or id_token" }, { status: 400 });
+    }
+
+    // CSRF protection: verify state matches the cookie
+    const storedState = request.cookies.get('oauth_state')?.value;
+    if (!state || !storedState || state !== storedState) {
+      return NextResponse.json({ error: "Invalid OAuth state (CSRF protection)" }, { status: 403 });
     }
 
     // In a production app, verify id_token signature using Apple's public keys.

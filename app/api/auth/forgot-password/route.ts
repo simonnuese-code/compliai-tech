@@ -38,8 +38,9 @@ export async function POST(req: Request) {
             }
         })
 
-        // Get origin from request to ensure correct link generation (localhost vs production)
-        const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        // Use only the trusted app URL from env—NEVER use the request origin header
+        // because an attacker can forge it to redirect reset links to a phishing domain
+        const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
         // Send email
         await sendPasswordResetEmail(user.email, token, user.name || 'Nutzer', origin)

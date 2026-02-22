@@ -1,4 +1,5 @@
 import { FlightScraper, ScraperSearchParams, ScrapedFlight } from './types';
+import { generateSmartDateSamples } from '../flight-intelligence';
 
 export class SerpApiScraper implements FlightScraper {
   name = 'Google Flights via SerpApi';
@@ -16,49 +17,64 @@ export class SerpApiScraper implements FlightScraper {
     }
 
     try {
-      console.log(`✈️ SerpApi: Searching for ${params.departureAirports.length} origins → ${params.destinationAirports.length} destinations`);
+      // Generate smart date samples across the entire date range
+      // This is the key improvement: instead of searching only 1 date,
+      // we sample strategically across the range (like Skyscanner's "cheapest month")
+      const dateSamples = generateSmartDateSamples(
+        params.dateRangeStart,
+        params.dateRangeEnd,
+        params.tripDurationDays,
+        params.flexibility
+      );
+
+      console.log(`✈️ SerpApi: Scanning ${dateSamples.length} date samples across ${params.departureAirports.length} origins → ${params.destinationAirports.length} destinations`);
 
       const allFlights: ScrapedFlight[] = [];
-      const searchPromises: Promise<ScrapedFlight[]>[] = [];
 
       // Google Flights via SerpApi allows comma-separated airport codes
-      // But let's batch them to avoid hitting URL length limits or Google limits (usually ~5-7)
       const BATCH_SIZE = 5;
-
       const depBatches = this.chunkArray(params.departureAirports, BATCH_SIZE);
       const destBatches = this.chunkArray(params.destinationAirports, BATCH_SIZE);
 
-      const outboundDate = this.formatDate(params.dateRangeStart);
-      const returnDateObj = new Date(params.dateRangeStart);
-      returnDateObj.setDate(returnDateObj.getDate() + params.tripDurationDays);
-      const returnDate = this.formatDate(returnDateObj);
+      // For each date sample, search all airport combinations
+      for (const dateSample of dateSamples) {
+        const outboundDate = this.formatDate(dateSample.outbound);
+        const returnDate = this.formatDate(dateSample.return);
 
-      for (const depBatch of depBatches) {
-        for (const destBatch of destBatches) {
+        const searchPromises: Promise<ScrapedFlight[]>[] = [];
+
+        for (const depBatch of depBatches) {
+          for (const destBatch of destBatches) {
             const depString = depBatch.join(',');
             const destString = destBatch.join(',');
 
             searchPromises.push(
-                this.searchSingle(depString, destString, outboundDate, returnDate, params)
-                  .catch(err => {
-                    console.error(`SerpApi search failed for ${depString}->${destString}:`, err.message);
-                    return [];
-                  })
+              this.searchSingle(depString, destString, outboundDate, returnDate, params)
+                .catch(err => {
+                  console.error(`SerpApi search failed for ${depString}->${destString} on ${outboundDate}:`, err.message);
+                  return [];
+                })
             );
-            
-            // Add a small delay to prevent immediate rate limit if multiple batches
+
+            // Rate limit delay between requests
             if (depBatches.length * destBatches.length > 1) {
-                await new Promise(r => setTimeout(r, 500));
+              await new Promise(r => setTimeout(r, 300));
             }
+          }
+        }
+
+        const results = await Promise.all(searchPromises);
+        for (const flights of results) {
+          allFlights.push(...flights);
+        }
+
+        // Small delay between date samples to respect API rate limits
+        if (dateSamples.length > 1) {
+          await new Promise(r => setTimeout(r, 200));
         }
       }
 
-      const results = await Promise.all(searchPromises);
-      for (const flights of results) {
-        allFlights.push(...flights);
-      }
-
-      console.log(`✅ SerpApi: Found ${allFlights.length} flights total`);
+      console.log(`✅ SerpApi: Found ${allFlights.length} flights across ${dateSamples.length} dates`);
       return allFlights;
 
     } catch (error) {
@@ -104,10 +120,6 @@ export class SerpApiScraper implements FlightScraper {
       url.searchParams.append('travel_class', cabinMap[params.travelClass]);
     }
 
-    // Stops (if needed, but usually we want all options)
-    // 0 = Any, 1 = Nonstop only, 2=1 stop or fewer, 3=2 stops or fewer
-    // Use default (Any)
-
     const response = await fetch(url.toString());
 
     if (!response.ok) {
@@ -117,21 +129,17 @@ export class SerpApiScraper implements FlightScraper {
 
     const data = await response.json();
     
-    // Parse results
     // Combine best_flights and other_flights
     const bestFlights = data.best_flights || [];
     const otherFlights = data.other_flights || [];
     
-    // Prioritize best flights, then append cheapest other flights
-    // Limit to top 10 total to prevent overwhelming the user/DB
     let allRawFlights = [...bestFlights];
     
-    // Sort other flights by price just in case
+    // Sort other flights by price
     const sortedOther = otherFlights.sort((a: any, b: any) => (a.price || 99999) - (b.price || 99999));
-    
     allRawFlights = [...allRawFlights, ...sortedOther];
     
-    // Take top 10
+    // Take top 10 per date/route combination
     const limitedFlights = allRawFlights.slice(0, 10);
 
     return this.transformResults(limitedFlights, origin, destination, outboundDate, returnDate);
@@ -140,24 +148,21 @@ export class SerpApiScraper implements FlightScraper {
   private transformResults(results: any[], originParam: string, destinationParam: string, outboundDateStr: string, returnDateStr: string): ScrapedFlight[] {
     return results.map(flight => {
         const firstSegment = flight.flights?.[0];
-        const lastSegment = flight.flights?.[flight.flights.length - 1]; // Last segment of outbound leg?
+        const lastSegment = flight.flights?.[flight.flights.length - 1];
 
         if (!firstSegment) return null;
 
-        // Extract actual airport codes from the result
-        const actualDeparture = firstSegment.departure_airport?.id || originParam.split(',')[0]; // Fallback to first requested
+        const actualDeparture = firstSegment.departure_airport?.id || originParam.split(',')[0];
         const actualDestination = lastSegment?.arrival_airport?.id || destinationParam.split(',')[0];
 
         const airline = flight.airline_logo 
             ? (firstSegment.airline || 'Multiple Airlines') 
             : (firstSegment.airline || 'Unknown');
 
-        // Total duration is in minutes
         const duration = flight.total_duration || 0;
-
         const price = flight.price || 0;
 
-        // Build a proper Google Flights deep link with tfs protobuf parameter
+        // Build a proper Google Flights deep link
         const bookingLink = this.buildGoogleFlightsUrl(actualDeparture, actualDestination, outboundDateStr, returnDateStr);
 
         return {
@@ -178,11 +183,9 @@ export class SerpApiScraper implements FlightScraper {
   }
 
   /**
-   * Build a Google Flights deep link URL using the protobuf-encoded `tfs` parameter.
-   * This is the format Google Flights actually uses for search result URLs.
+   * Build a Google Flights deep link URL using protobuf-encoded `tfs` parameter.
    */
   private buildGoogleFlightsUrl(origin: string, destination: string, outboundDate: string, returnDate: string): string {
-    // Protobuf wire format helpers
     const encodeVarint = (value: number): number[] => {
       const bytes: number[] = [];
       while (value > 0x7f) {
@@ -207,15 +210,12 @@ export class SerpApiScraper implements FlightScraper {
     const messageField = (fieldNumber: number, content: number[]): number[] =>
       [...tag(fieldNumber, 2), ...encodeVarint(content.length), ...content];
 
-    // Airport message: { field1: 1 (IATA type), field2: "CODE" }
     const airport = (code: string): number[] =>
       [...varintField(1, 1), ...stringField(2, code)];
 
-    // Leg message: { field2: date, field13: origin, field14: destination }
     const leg = (date: string, from: string, to: string): number[] =>
       [...stringField(2, date), ...messageField(13, airport(from)), ...messageField(14, airport(to))];
 
-    // Root message: { field1: 28, field2: 2 (round trip), field3: outbound_leg, field3: return_leg }
     const tfs = new Uint8Array([
       ...varintField(1, 28),
       ...varintField(2, 2),
@@ -223,9 +223,7 @@ export class SerpApiScraper implements FlightScraper {
       ...messageField(3, leg(returnDate, destination, origin)),
     ]);
 
-    // Base64url encode
     const base64 = Buffer.from(tfs).toString('base64url');
-
     return `https://www.google.com/travel/flights/search?tfs=${base64}&curr=EUR&hl=de`;
   }
 

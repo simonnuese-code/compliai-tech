@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { createTrackerApiSchema } from '@/lib/flugtracker/validation';
+import { scoreFlights, analyzePriceTrend, findBestDates } from '@/lib/flugtracker/flight-intelligence';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// GET single tracker with details
+// GET single tracker with AI-enriched details
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
@@ -30,7 +31,7 @@ export async function GET(
       },
       include: {
         flightResults: {
-          orderBy: { checkedAt: 'desc' },
+          orderBy: { priceEuro: 'asc' },
           take: 100,
         },
         reports: {
@@ -47,7 +48,48 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ tracker });
+    // ─── AI INTELLIGENCE LAYER ─────────────────────────────
+
+    // 1. Score all flights with value scoring
+    const flightsForScoring = tracker.flightResults.map(f => ({
+      priceEuro: Number(f.priceEuro),
+      totalDurationMinutes: f.totalDurationMinutes,
+      stops: f.stops,
+      outboundDate: f.outboundDate,
+      airline: f.airline,
+    }));
+
+    const scores = scoreFlights(flightsForScoring);
+
+    // Enrich flight results with scores
+    const scoredFlights = tracker.flightResults.map((flight, index) => {
+      const score = scores.get(index);
+      return {
+        ...flight,
+        priceEuro: Number(flight.priceEuro),
+        valueScore: score?.valueScore ?? null,
+        valueLabel: score?.valueLabel ?? null,
+        scoreBreakdown: score?.scoreBreakdown ?? null,
+      };
+    });
+
+    // 2. Price trend analysis (AI recommendation)
+    const priceTrend = await analyzePriceTrend(id);
+
+    // 3. Best dates across the range
+    const bestDates = await findBestDates(id);
+
+    return NextResponse.json({
+      tracker: {
+        ...tracker,
+        flightResults: scoredFlights,
+      },
+      intelligence: {
+        priceTrend,
+        bestDates: bestDates.slice(0, 10), // Top 10 cheapest dates
+        totalFlightsAnalyzed: tracker.flightResults.length,
+      },
+    });
   } catch (error) {
     console.error('Get tracker error:', error);
     return NextResponse.json(

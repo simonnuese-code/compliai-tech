@@ -3,8 +3,49 @@
 > eslint .
 
 
-/Users/simonnuse/compliai-mvp/components/landing/TrustSection.tsx
-  74:7  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+/Users/simonnuse/compliai-mvp/app/flugtracker/dashboard/page.tsx
+  69:8  warning  React Hook useEffect has a missing dependency: 'fetchTrackers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/simonnuse/compliai-mvp/app/flugtracker/tracker/[id]/page.tsx
+  134:8  warning  React Hook useEffect has a missing dependency: 'fetchTrackerDetails'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/simonnuse/compliai-mvp/components/dashboard/sidebar.tsx
+  197:18  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+/Users/simonnuse/compliai-mvp/components/dashboard/sidebar.tsx:197:18
+  195 |                 )}
+  196 |             >
+> 197 |                 <SidebarContent />
+      |                  ^^^^^^^^^^^^^^ This component is created during render
+  198 |             </motion.aside>
+  199 |
+  200 |             {/* Mobile Header */}
+
+/Users/simonnuse/compliai-mvp/components/dashboard/sidebar.tsx:60:28
+   58 |     }
+   59 |
+>  60 |     const SidebarContent = () => (
+      |                            ^^^^^^^
+>  61 |         <div className="flex flex-col h-full">
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  62 |             {/* Logo */}
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 181 |         </div>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 182 |     )
+      | ^^^^^^ The component is created during render here
+  183 |
+  184 |     return (
+  185 |         <>  react-hooks/static-components
+
+/Users/simonnuse/compliai-mvp/components/pdf/ComplianceReportPDF.tsx
+  215:13  warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+
+/Users/simonnuse/compliai-mvp/components/questionnaire/questionnaire-wizard.tsx
+  44:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
 
 Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
 * Update external systems with the latest state from React.
@@ -12,15 +53,17 @@ Effects are intended to synchronize state between React and external systems suc
 
 Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
 
-/Users/simonnuse/compliai-mvp/components/landing/TrustSection.tsx:74:7
-  72 |       const startPoint = compassPoints.find(p => p.id === 'structure')!
-  73 |       animate(angle, startPoint.angle, { duration: 1.5, ease: "easeOut" })
-> 74 |       setActivePoint(startPoint)
-     |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  75 |     }
-  76 |   }, [isInView])
-  77 |  react-hooks/set-state-in-effect
-  76:6  warning  React Hook useEffect has missing dependencies: 'activePoint' and 'angle'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+/Users/simonnuse/compliai-mvp/components/questionnaire/questionnaire-wizard.tsx:44:21
+  42 |                 try {
+  43 |                     const { answers: savedAnswers, step } = JSON.parse(savedDraft)
+> 44 |                     setAnswers(prev => ({ ...prev, ...savedAnswers }))
+     |                     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |                     if (typeof step === 'number' && step < questionnaireData.length) {
+  46 |                         setCurrentStepIndex(step)
+  47 |                     }  react-hooks/set-state-in-effect
 
-✖ 2 problems (1 error, 1 warning)
+/Users/simonnuse/compliai-mvp/mobile-app/app/_layout.tsx
+  23:8  warning  React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 6 problems (2 errors, 4 warnings)
 

@@ -66,6 +66,7 @@ export default function FlugTrackerDashboard() {
 
     useEffect(() => {
         fetchTrackers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchTrackers = async () => {
@@ -307,118 +308,123 @@ function TrackerCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
         >
-            <Card className="group overflow-hidden border-white/10 bg-gradient-to-b from-slate-800/50 to-slate-900/50 transition-all hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/5">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div className="flex-1">
-                        <Badge
-                            variant="outline"
-                            className={cn('mb-2 border', statusColors[tracker.status])}
-                        >
-                            {TRACKER_STATUS_LABELS[tracker.status]}
-                        </Badge>
-                        <CardTitle className="text-lg text-white">{tracker.name}</CardTitle>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:bg-white/10 hover:text-white"
+            <Link href={`/flugtracker/tracker/${tracker.id}`} className="block">
+                <Card className="group cursor-pointer overflow-hidden border-white/10 bg-gradient-to-b from-slate-800/50 to-slate-900/50 transition-all hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/5">
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                        <div className="flex-1">
+                            <Badge
+                                variant="outline"
+                                className={cn('mb-2 border', statusColors[tracker.status])}
                             >
-                                <Settings className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="end"
-                            className="border-slate-700 bg-slate-800"
-                        >
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href={`/flugtracker/tracker/${tracker.id}`}
-                                    className="flex items-center text-slate-300 focus:bg-white/10 focus:text-white"
+                                {TRACKER_STATUS_LABELS[tracker.status]}
+                            </Badge>
+                            <CardTitle className="text-lg text-white">{tracker.name}</CardTitle>
+                        </div>
+                        {/* Stop propagation so dropdown clicks don't navigate */}
+                        <div onClick={(e) => e.preventDefault()} onClickCapture={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-slate-400 hover:bg-white/10 hover:text-white"
+                                    >
+                                        <Settings className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="border-slate-700 bg-slate-800"
                                 >
-                                    <ChevronRight className="mr-2 h-4 w-4" />
-                                    Details anzeigen
-                                </Link>
-                            </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link
+                                            href={`/flugtracker/tracker/${tracker.id}`}
+                                            className="flex items-center text-slate-300 focus:bg-white/10 focus:text-white"
+                                        >
+                                            <ChevronRight className="mr-2 h-4 w-4" />
+                                            Details anzeigen
+                                        </Link>
+                                    </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                                className="text-slate-300 focus:bg-white/10 focus:text-white"
-                                onClick={() => onPauseResume(tracker.id, tracker.status)}
-                            >
-                                {tracker.status === 'ACTIVE' ? (
-                                    <>
-                                        <Pause className="mr-2 h-4 w-4" />
-                                        Pausieren
-                                    </>
+                                    <DropdownMenuItem
+                                        className="text-slate-300 focus:bg-white/10 focus:text-white"
+                                        onClick={() => onPauseResume(tracker.id, tracker.status)}
+                                    >
+                                        {tracker.status === 'ACTIVE' ? (
+                                            <>
+                                                <Pause className="mr-2 h-4 w-4" />
+                                                Pausieren
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play className="mr-2 h-4 w-4" />
+                                                Fortsetzen
+                                            </>
+                                        )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-slate-700" />
+                                    <DropdownMenuItem
+                                        className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                                        onClick={() => onDelete(tracker.id)}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Löschen
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {/* Route */}
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                            <MapPin className="h-4 w-4" />
+                            <span className="font-mono">{route}</span>
+                        </div>
+
+                        {/* Date Range */}
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                            <Calendar className="h-4 w-4" />
+                            <span>{dateRange}</span>
+                        </div>
+
+                        {/* Price & Stats */}
+                        <div className="flex items-end justify-between border-t border-white/10 pt-4">
+                            <div>
+                                <p className="text-xs text-slate-500">Günstigster Preis</p>
+                                {tracker.cheapestPrice ? (
+                                    <p className="text-2xl font-bold text-white">
+                                        {Math.round(tracker.cheapestPrice)}€
+                                    </p>
                                 ) : (
-                                    <>
-                                        <Play className="mr-2 h-4 w-4" />
-                                        Fortsetzen
-                                    </>
+                                    <p className="text-lg text-slate-500">—</p>
                                 )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-slate-700" />
-                            <DropdownMenuItem
-                                className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
-                                onClick={() => onDelete(tracker.id)}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Route */}
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <MapPin className="h-4 w-4" />
-                        <span className="font-mono">{route}</span>
-                    </div>
-
-                    {/* Date Range */}
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <Calendar className="h-4 w-4" />
-                        <span>{dateRange}</span>
-                    </div>
-
-                    {/* Price & Stats */}
-                    <div className="flex items-end justify-between border-t border-white/10 pt-4">
-                        <div>
-                            <p className="text-xs text-slate-500">Günstigster Preis</p>
-                            {tracker.cheapestPrice ? (
-                                <p className="text-2xl font-bold text-white">
-                                    {Math.round(tracker.cheapestPrice)}€
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs text-slate-500">Flüge gefunden</p>
+                                <p className="text-lg font-semibold text-slate-300">
+                                    {tracker.flightsFound}
                                 </p>
-                            ) : (
-                                <p className="text-lg text-slate-500">—</p>
-                            )}
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-xs text-slate-500">Flüge gefunden</p>
-                            <p className="text-lg font-semibold text-slate-300">
-                                {tracker.flightsFound}
-                            </p>
-                        </div>
-                    </div>
 
-                    {/* Last Checked */}
-                    {tracker.lastCheckedAt && (
-                        <div className="flex items-center gap-1 text-xs text-slate-500">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                                Zuletzt geprüft:{' '}
-                                {new Date(tracker.lastCheckedAt).toLocaleDateString('de-DE', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </span>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        {/* Last Checked */}
+                        {tracker.lastCheckedAt && (
+                            <div className="flex items-center gap-1 text-xs text-slate-500">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                    Zuletzt geprüft:{' '}
+                                    {new Date(tracker.lastCheckedAt).toLocaleDateString('de-DE', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </span>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </Link>
         </motion.div>
     );
 }

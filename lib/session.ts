@@ -11,11 +11,18 @@ export interface SessionData {
   isLoggedIn: boolean;
 }
 
+const sessionPassword =
+  process.env.NODE_ENV === "production" && !process.env.SECRET_COOKIE_PASSWORD
+    ? (() => { throw new Error("SECRET_COOKIE_PASSWORD is not set in production"); })()
+    : process.env.SECRET_COOKIE_PASSWORD || "complex_password_at_least_32_characters_long";
+
 export const sessionOptions: SessionOptions = {
-  password: process.env.SECRET_COOKIE_PASSWORD || "complex_password_at_least_32_characters_long",
+  password: sessionPassword,
   cookieName: "compliai_session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax" as const,
   },
 };
 

@@ -57,7 +57,7 @@ export function Sidebar({ user }: SidebarProps) {
         router.push('/login')
     }
 
-    const SidebarContent = () => (
+    const sidebarContent = (
         <div className="flex flex-col h-full">
             {/* Logo */}
             <div className={cn("p-6 border-b border-slate-100 dark:border-slate-800", collapsed && "px-2 py-4")}>
@@ -194,7 +194,7 @@ export function Sidebar({ user }: SidebarProps) {
                     collapsed ? "w-20" : "w-64"
                 )}
             >
-                <SidebarContent />
+                {sidebarContent}
             </motion.aside>
 
             {/* Mobile Header */}

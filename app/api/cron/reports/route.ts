@@ -6,6 +6,10 @@ import { EmailService } from '@/lib/flugtracker/email-service';
  * Verify cron authorization via CRON_SECRET.
  */
 function verifyCronAuth(request: NextRequest): boolean {
+  if (!process.env.CRON_SECRET) {
+    console.error('CRON_SECRET is not set');
+    return false;
+  }
   const authHeader = request.headers.get('authorization');
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }

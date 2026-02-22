@@ -212,6 +212,7 @@ export const ComplianceReportPDF = ({ check, user, logoBase64 }: ComplianceRepor
         {/* Header */}
         <View style={styles.header}>
           {logoBase64 ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={logoBase64} style={styles.logo} />
           ) : (
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#06B6D4' }}>CompliAI</Text>

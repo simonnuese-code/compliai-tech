@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const state = searchParams.get("state");
 
     if (error) {
       return NextResponse.json({ error }, { status: 400 });
@@ -16,6 +17,12 @@ export async function GET(request: NextRequest) {
 
     if (!code) {
       return NextResponse.json({ error: "Missing code" }, { status: 400 });
+    }
+
+    // CSRF protection: verify state matches the cookie
+    const storedState = request.cookies.get('oauth_state')?.value;
+    if (!state || !storedState || state !== storedState) {
+      return NextResponse.json({ error: "Invalid OAuth state (CSRF protection)" }, { status: 403 });
     }
 
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;

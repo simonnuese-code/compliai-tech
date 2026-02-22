@@ -8,6 +8,10 @@ import { prisma } from '@/lib/prisma';
  * For manual triggers from the frontend, we verify the user session instead.
  */
 function verifyCronAuth(request: NextRequest): boolean {
+  if (!process.env.CRON_SECRET) {
+    console.error('CRON_SECRET is not set');
+    return false;
+  }
   const authHeader = request.headers.get('authorization');
   if (authHeader === `Bearer ${process.env.CRON_SECRET}`) {
     return true;

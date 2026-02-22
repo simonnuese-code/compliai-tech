@@ -1,17 +1,26 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { z } from 'zod'
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token ist erforderlich'),
+  password: z.string().min(10, 'Passwort muss mindestens 10 Zeichen lang sein'),
+})
 
 export async function POST(req: Request) {
     try {
-        const { token, password } = await req.json()
+        const body = await req.json()
+        const result = resetPasswordSchema.safeParse(body)
 
-        if (!token || !password) {
+        if (!result.success) {
             return NextResponse.json(
-                { error: 'Token und Passwort sind erforderlich' },
+                { error: result.error.issues[0]?.message || 'Ungültige Eingaben' },
                 { status: 400 }
             )
         }
+
+        const { token, password } = result.data
 
         // Find user with valid token
         const user = await prisma.user.findFirst({
@@ -31,7 +40,7 @@ export async function POST(req: Request) {
         }
 
         // Hash new password
-        const hashedPassword = await bcrypt.hash(password, 10)
+        const hashedPassword = await bcrypt.hash(password, 12)
 
         // Update user
         await prisma.user.update({

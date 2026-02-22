@@ -41,10 +41,12 @@ export default function QuestionnaireWizard({
             if (savedDraft) {
                 try {
                     const { answers: savedAnswers, step } = JSON.parse(savedDraft)
-                    setAnswers(prev => ({ ...prev, ...savedAnswers }))
-                    if (typeof step === 'number' && step < questionnaireData.length) {
-                        setCurrentStepIndex(step)
-                    }
+                    setTimeout(() => {
+                        setAnswers(prev => ({ ...prev, ...savedAnswers }))
+                        if (typeof step === 'number' && step < questionnaireData.length) {
+                            setCurrentStepIndex(step)
+                        }
+                    }, 0)
                 } catch (e) {
                     console.error('Failed to load draft', e)
                 }

@@ -20,11 +20,11 @@ function RootLayoutNav() {
             // If user is signed in but in auth group, redirect to dashboard
             router.replace('/(app)/dashboard');
         }
-    }, [user, segments, isLoading]);
+    }, [user, segments, isLoading, router]);
 
     if (isLoading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', items: 'center' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#0891b2" />
             </View>
         );

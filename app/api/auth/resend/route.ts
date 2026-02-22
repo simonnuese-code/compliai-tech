@@ -40,8 +40,6 @@ export async function POST(request: NextRequest) {
     const verificationCode = generateVerificationCode();
     const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 Min
 
-    console.log('🔐 VERIFICATION CODE (Resend):', verificationCode, 'for', email)
-
     await prisma.user.update({
       where: { id: user.id },
       data: {

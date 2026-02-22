@@ -50,11 +50,11 @@ export async function POST(request: NextRequest) {
         )
       } else {
         // User exists but executes registration again -> Update usage data and resend code
-        const passwordHash = await bcrypt.hash(password, 10)
+        const passwordHash = await bcrypt.hash(password, 12)
         const verificationCode = generateVerificationCode()
         const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000) // 15 Min
 
-        console.log('🔐 VERIFICATION CODE (Re-Register):', verificationCode, 'for', email)
+
 
         await prisma.user.update({
             where: { id: existingUser.id },
@@ -88,11 +88,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await bcrypt.hash(password, 12)
     const verificationCode = generateVerificationCode()
     const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000) // 15 Min
 
-    console.log('🔐 VERIFICATION CODE (Register):', verificationCode, 'for', email)
+
 
     // User erstellen OHNE emailVerified
     const user = await prisma.user.create({
