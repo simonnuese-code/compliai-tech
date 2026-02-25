@@ -27,6 +27,7 @@ model User {
   // Neue Felder
   company     String?
   role        String?
+  birthday    DateTime? @db.Date
   onboarded   Boolean @default(false)
 
   // Relations

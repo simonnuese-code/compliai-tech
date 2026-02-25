@@ -178,6 +178,16 @@ export default function FlugTrackerDashboard() {
                                 align="end"
                                 className="border-slate-700 bg-slate-800"
                             >
+                                <DropdownMenuItem asChild>
+                                    <Link
+                                        href="/flugtracker/settings"
+                                        className="flex items-center text-slate-300 focus:bg-white/10 focus:text-white"
+                                    >
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        Einstellungen
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-slate-700" />
                                 <DropdownMenuItem
                                     className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
                                     onClick={handleLogout}

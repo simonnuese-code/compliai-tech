@@ -2,7 +2,7 @@ import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { GlassCard } from '@/components/ui/glass-card'
-import { User, Building, Mail, Lock, Trash2, AlertTriangle } from 'lucide-react'
+import { User, Building, Mail, Lock, Trash2, AlertTriangle, Cake } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { DeleteAccountButton } from '@/components/settings/DeleteAccountButton'
 import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm'
 import { ChangeEmailForm } from '@/components/settings/ChangeEmailForm'
+import { BirthdayForm } from '@/components/settings/BirthdayForm'
 
 export default async function EinstellungenPage() {
     const session = await getSession()
@@ -67,6 +68,23 @@ export default async function EinstellungenPage() {
                         </div>
                     </div>
                 </div>
+            </GlassCard>
+
+            {/* Birthday Section */}
+            <GlassCard padding="lg">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-xl bg-purple-50 text-purple-600">
+                        <Cake className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-semibold text-slate-900">Geburtstag</h2>
+                        <p className="text-sm text-slate-500">Erhalte an deinem Geburtstag eine nette Email von uns 🎂</p>
+                    </div>
+                </div>
+
+                <BirthdayForm
+                    currentBirthday={user.birthday ? user.birthday.toISOString().split('T')[0] : null}
+                />
             </GlassCard>
 
             {/* Security Section */}
