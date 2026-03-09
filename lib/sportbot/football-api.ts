@@ -15,7 +15,7 @@ export const SUPPORTED_LEAGUES = [
   { code: 'SA',  name: 'Serie A', country: 'Italy', flag: '🇮🇹' },
   { code: 'FL1', name: 'Ligue 1', country: 'France', flag: '🇫🇷' },
   { code: 'CL',  name: 'Champions League', country: 'Europe', flag: '🏆' },
-  { code: 'ELC', name: '2. Bundesliga', country: 'Germany', flag: '🇩🇪' },
+  { code: 'ELC', name: 'Championship', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   { code: 'PPL', name: 'Primeira Liga', country: 'Portugal', flag: '🇵🇹' },
   { code: 'DED', name: 'Eredivisie', country: 'Netherlands', flag: '🇳🇱' },
   { code: 'EC',  name: 'Europa League', country: 'Europe', flag: '🏆' },
