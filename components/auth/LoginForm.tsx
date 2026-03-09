@@ -47,7 +47,7 @@ export function LoginForm() {
                 throw new Error(result.message || "Ein Fehler ist aufgetreten.");
             }
 
-            router.push("/dashboard");
+            router.push("/hub");
             router.refresh(); // Ensure session state is updated
         } catch (err: any) {
             setError(err.message);

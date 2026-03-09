@@ -17,6 +17,7 @@ import {
     MapPin,
     Loader2,
     ChevronRight,
+    ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,7 +75,7 @@ export default function FlugTrackerDashboard() {
             const res = await fetch('/api/flugtracker/trackers');
             if (!res.ok) {
                 if (res.status === 401) {
-                    router.push('/flugtracker/login');
+                    router.push('/login');
                     return;
                 }
                 throw new Error('Fehler beim Laden');
@@ -138,7 +139,7 @@ export default function FlugTrackerDashboard() {
     const handleLogout = async () => {
         try {
             await fetch('/api/flugtracker/auth/logout', { method: 'POST' });
-            router.push('/flugtracker/login');
+            router.push('/login');
         } catch (error) {
             console.error('Logout error:', error);
         }
@@ -178,6 +179,16 @@ export default function FlugTrackerDashboard() {
                                 align="end"
                                 className="border-slate-700 bg-slate-800"
                             >
+                                <DropdownMenuItem asChild>
+                                    <Link
+                                        href="/hub"
+                                        className="flex items-center text-slate-300 focus:bg-white/10 focus:text-white"
+                                    >
+                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                        Zum Hub
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-slate-700" />
                                 <DropdownMenuItem asChild>
                                     <Link
                                         href="/flugtracker/settings"

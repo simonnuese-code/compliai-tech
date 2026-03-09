@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     session.isLoggedIn = true;
     await session.save();
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_URL}/dashboard`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_URL}/hub`);
 
   } catch (err) {
     console.error("GitHub Callback Error:", err);

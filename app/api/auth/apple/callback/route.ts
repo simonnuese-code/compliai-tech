@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     await session.save();
 
     // Redirect to Dashboard
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_URL}/dashboard`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_URL}/hub`);
 
   } catch (error) {
     console.error("Apple Callback Error:", error);

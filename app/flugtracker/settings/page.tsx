@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import {
     Plane,
     ArrowLeft,
+    Home,
     Cake,
     Check,
     X,
@@ -39,7 +40,7 @@ export default function FlugTrackerSettingsPage() {
             const res = await fetch('/api/user/profile');
             if (!res.ok) {
                 if (res.status === 401) {
-                    router.push('/flugtracker/login');
+                    router.push('/login');
                     return;
                 }
                 throw new Error('Fehler beim Laden');
@@ -119,15 +120,26 @@ export default function FlugTrackerSettingsPage() {
                         <span className="text-xl font-bold text-white">FlugTracker</span>
                     </Link>
 
-                    <Link href="/flugtracker/dashboard">
-                        <Button
-                            variant="ghost"
-                            className="text-slate-400 hover:bg-white/10 hover:text-white"
-                        >
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Zurück zum Dashboard
-                        </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <Link href="/hub">
+                            <Button
+                                variant="ghost"
+                                className="text-slate-400 hover:bg-white/10 hover:text-white"
+                            >
+                                <Home className="mr-2 h-4 w-4" />
+                                Zum Hub
+                            </Button>
+                        </Link>
+                        <Link href="/flugtracker/dashboard">
+                            <Button
+                                variant="ghost"
+                                className="text-slate-400 hover:bg-white/10 hover:text-white"
+                            >
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Zurück zum Dashboard
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </nav>
 

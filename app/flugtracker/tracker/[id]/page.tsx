@@ -22,6 +22,7 @@ import {
     Zap,
     ArrowRight,
     Minus,
+    Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,7 +151,7 @@ export default function TrackerDetailsPage() {
             const res = await fetch(`/api/flugtracker/trackers/${id}`);
             if (!res.ok) {
                 if (res.status === 401) {
-                    router.push('/flugtracker/login');
+                    router.push('/login');
                     return;
                 }
                 throw new Error('Fehler beim Laden');
@@ -239,13 +240,20 @@ export default function TrackerDetailsPage() {
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-200">
             {/* Navbar */}
             <nav className="border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
-                <div className="container mx-auto flex h-16 items-center px-4">
+                <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <Link
                         href="/flugtracker/dashboard"
                         className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white"
                     >
                         <ArrowLeft className="h-5 w-5" />
                         <span className="font-medium">Zurück</span>
+                    </Link>
+                    <Link
+                        href="/hub"
+                        className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white"
+                    >
+                        <Home className="h-4 w-4" />
+                        <span className="text-sm font-medium">Zum Hub</span>
                     </Link>
                 </div>
             </nav>

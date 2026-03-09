@@ -16,6 +16,7 @@ import {
     ArrowRight,
     Loader2,
     Search,
+    Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -200,12 +201,19 @@ export default function NewTrackerPage() {
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
             {/* Navigation */}
             <nav className="border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
-                <div className="container mx-auto flex h-16 items-center px-4">
+                <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <Link href="/flugtracker/dashboard" className="flex items-center gap-2">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-sky-500/25">
                             <Plane className="h-5 w-5 text-white" />
                         </div>
                         <span className="text-xl font-bold text-white">FlugTracker</span>
+                    </Link>
+                    <Link
+                        href="/hub"
+                        className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white"
+                    >
+                        <Home className="h-4 w-4" />
+                        <span className="text-sm font-medium">Zum Hub</span>
                     </Link>
                 </div>
             </nav>

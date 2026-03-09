@@ -106,7 +106,7 @@ export default function Navigation({ user }: NavigationProps) {
                   asChild
                   className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/30 border-0 transition-all rounded-full px-6"
                 >
-                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href="/hub">Dashboard</Link>
                 </Button>
               </div>
             ) : (
@@ -186,7 +186,7 @@ export default function Navigation({ user }: NavigationProps) {
                         </div>
 
                         <Button asChild className="w-full justify-center text-sm font-semibold h-10 bg-gradient-to-r from-cyan-500 to-blue-600 border-0 shadow-lg shadow-cyan-900/20">
-                          <Link href="/dashboard">Zum Dashboard</Link>
+                          <Link href="/hub">Zum Hub</Link>
                         </Button>
                         <Button onClick={handleLogout} variant="outline" className="w-full justify-center text-sm h-10 border-slate-700 text-slate-300 hover:text-white hover:bg-white/5 hover:border-slate-600">
                           Logout

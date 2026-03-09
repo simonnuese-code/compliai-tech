@@ -142,11 +142,11 @@ export function Sidebar({ user }: SidebarProps) {
                 {!collapsed ? (
                     <div className="space-y-3">
                         <Link
-                            href="/"
+                            href="/hub"
                             className="w-full flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mb-2"
                         >
                             <ArrowLeft className="w-5 h-5" />
-                            <span className="text-sm font-medium">Zur Startseite</span>
+                            <span className="text-sm font-medium">Zum Hub</span>
                         </Link>
                         <div className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                             <p className="text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent truncate">{user.name || 'User'}</p>
@@ -163,9 +163,9 @@ export function Sidebar({ user }: SidebarProps) {
                 ) : (
                     <div className="space-y-3">
                         <Link
-                            href="/"
+                            href="/hub"
                             className="w-full p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex justify-center"
-                            title="Zur Startseite"
+                            title="Zum Hub"
                         >
                             <ArrowLeft className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                         </Link>

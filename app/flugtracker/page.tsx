@@ -33,12 +33,12 @@ export default function FlugTrackerLandingPage() {
                         <span className="text-xl font-bold text-white">FlugTracker</span>
                     </Link>
                     <div className="flex items-center gap-4">
-                        <Link href="/flugtracker/login">
+                        <Link href="/login">
                             <Button variant="ghost" className="text-slate-300 hover:bg-white/10 hover:text-white">
                                 Anmelden
                             </Button>
                         </Link>
-                        <Link href="/flugtracker/register">
+                        <Link href="/register">
                             <Button className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500">
                                 Registrieren
                             </Button>
@@ -86,7 +86,7 @@ export default function FlugTrackerLandingPage() {
 
                         {/* CTA Buttons */}
                         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                            <Link href="/flugtracker/register">
+                            <Link href="/register">
                                 <Button
                                     size="lg"
                                     className="group h-14 bg-gradient-to-r from-sky-500 to-blue-600 px-8 text-lg hover:from-sky-400 hover:to-blue-500"
@@ -95,7 +95,7 @@ export default function FlugTrackerLandingPage() {
                                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                                 </Button>
                             </Link>
-                            <Link href="/flugtracker/login">
+                            <Link href="/login">
                                 <Button
                                     size="lg"
                                     variant="outline"
@@ -338,7 +338,7 @@ export default function FlugTrackerLandingPage() {
                             Erstellen Sie jetzt Ihren ersten FlugTracker und verpassen Sie nie
                             wieder ein gutes Angebot für Ihre Traumreise.
                         </p>
-                        <Link href="/flugtracker/register">
+                        <Link href="/register">
                             <Button
                                 size="lg"
                                 className="group h-14 bg-gradient-to-r from-sky-500 to-blue-600 px-10 text-lg hover:from-sky-400 hover:to-blue-500"

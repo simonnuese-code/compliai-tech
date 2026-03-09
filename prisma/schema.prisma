@@ -35,6 +35,11 @@ model User {
   tasks       Task[]
   documents   Document[]
   flightTrackers FlightTracker[]
+  
+  // Sport-Bot Relations
+  followedTeams    FollowedTeam[]
+  sportSettings    SportBotSettings?
+  whatsappSession  WhatsAppSession?
 
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
@@ -285,4 +290,183 @@ model FlightReport {
 enum FlightReportType {
   SCHEDULED
   PRICE_ALERT
+}
+
+// ===========================================
+// SPORT-BOT MODELS
+// ===========================================
+
+model FollowedTeam {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  teamId            Int      // football-data.org team ID
+  teamName          String
+  teamCrest         String?  // URL to team logo
+  teamShortName     String?
+  leagueCode        String   // e.g. "BL1", "PL", "PD"
+  leagueName        String   // e.g. "Bundesliga", "Premier League"
+  leagueEmblem      String?  // URL to league logo
+  
+  // Notification preferences per team
+  notifyGoals       Boolean  @default(true)
+  notifyKickoff     Boolean  @default(true)
+  notifyHalftime    Boolean  @default(true)
+  notifyFulltime    Boolean  @default(true)
+  notifyRedCards    Boolean  @default(true)
+  notifyPenalties   Boolean  @default(true)
+  notifyPreMatch    Boolean  @default(true)   // 15 min before
+  
+  createdAt         DateTime @default(now())
+  
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("followed_teams")
+}
+
+model SportMatch {
+  id                    String   @id @default(cuid())
+  externalId            Int      @unique  // football-data.org match ID
+  
+  competitionCode       String   // e.g. "BL1"
+  competitionName       String
+  competitionEmblem     String?
+  matchday              Int?
+  stage                 String?  // e.g. "REGULAR_SEASON", "QUARTER_FINALS"
+  
+  homeTeamId            Int
+  homeTeamName          String
+  homeTeamCrest         String?
+  awayTeamId            Int
+  awayTeamName          String
+  awayTeamCrest         String?
+  
+  status                MatchStatus @default(SCHEDULED)
+  
+  // Scores
+  homeScoreFullTime     Int?
+  awayScoreFullTime     Int?
+  homeScoreHalfTime     Int?
+  awayScoreHalfTime     Int?
+  
+  // Timing
+  utcDate               DateTime
+  minute                Int?       // Current match minute (if live)
+  
+  // Last update from API
+  lastUpdatedAt         DateTime   @default(now())
+  
+  // Relations
+  events                MatchEvent[]
+  
+  @@index([status])
+  @@index([utcDate])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@map("sport_matches")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  TIMED
+  IN_PLAY
+  PAUSED       // Halftime
+  FINISHED
+  SUSPENDED
+  POSTPONED
+  CANCELLED
+  AWARDED
+}
+
+model MatchEvent {
+  id              String   @id @default(cuid())
+  matchId         String
+  match           SportMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  
+  eventType       SportEventType
+  minute          Int
+  teamId          Int?
+  teamName        String?
+  playerName      String?
+  detail          String?    // e.g. "Penalty", "Own Goal", "Header"
+  
+  // Score at the time of this event
+  homeScore       Int?
+  awayScore       Int?
+  
+  createdAt       DateTime @default(now())
+  
+  @@unique([matchId, eventType, minute, playerName])
+  @@index([matchId])
+  @@map("match_events")
+}
+
+enum SportEventType {
+  GOAL
+  OWN_GOAL
+  PENALTY_SCORED
+  PENALTY_MISSED
+  YELLOW_CARD
+  SECOND_YELLOW
+  RED_CARD
+  SUBSTITUTION
+  VAR_DECISION
+}
+
+model SentNotification {
+  id              String   @id @default(cuid())
+  userId          String
+  matchExternalId Int
+  eventKey        String   // Unique key like "match_123_goal_45_Mueller"
+  channel         String   @default("whatsapp") // "whatsapp" or "email"
+  messageText     String
+  sentAt          DateTime @default(now())
+  
+  @@unique([userId, eventKey])
+  @@index([userId])
+  @@index([matchExternalId])
+  @@map("sent_notifications")
+}
+
+model WhatsAppSession {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  phoneNumber     String?
+  sessionName     String   @unique  // WAHA session name
+  status          WASessionStatus @default(DISCONNECTED)
+  qrCode          String?  @db.Text  // Current QR code for pairing
+  lastSeenAt      DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("whatsapp_sessions")
+}
+
+enum WASessionStatus {
+  DISCONNECTED
+  QR_READY
+  CONNECTED
+  FAILED
+}
+
+model SportBotSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  preMatchMinutes       Int      @default(15)  // How many minutes before to notify
+  notificationsEnabled  Boolean  @default(true)
+  quietHoursStart       String?  // e.g. "23:00"
+  quietHoursEnd         String?  // e.g. "07:00"
+  timezone              String   @default("Europe/Berlin")
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@map("sportbot_settings")
 }
