@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { motion } from 'motion/react'
+import { motion, AnimatePresence } from 'motion/react'
+import QRCode from 'react-qr-code'
 import {
   ArrowLeft,
   Bell,
@@ -193,51 +194,80 @@ export default function SportBotSettingsPage() {
             </div>
           </div>
 
-          {whatsapp?.status === 'CONNECTED' ? (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <Wifi className="h-5 w-5 text-emerald-400" />
-              <div>
-                <p className="text-sm font-semibold text-emerald-400">Verbunden</p>
-                {whatsapp.phoneNumber && (
-                  <p className="text-xs text-slate-400">{whatsapp.phoneNumber}</p>
-                )}
-              </div>
-            </div>
-          ) : qrCode ? (
-            <div className="text-center py-6">
-              <p className="text-sm text-slate-300 mb-4">Scanne diesen QR-Code mit WhatsApp:</p>
-              <div className="inline-block p-4 bg-white rounded-2xl mb-4">
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCode)}`} alt="WhatsApp QR Code" className="w-48 h-48" />
-              </div>
-              <p className="text-xs text-slate-500">WhatsApp → Einstellungen → Verknüpfte Geräte → Gerät hinzufügen</p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 flex-1">
-                <WifiOff className="h-5 w-5 text-slate-500" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-300">
-                    {whatsapp?.status === 'QR_READY' && !qrCode ? "Verbindung wird hergestellt..." : "Nicht verbunden"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {whatsapp?.status === 'QR_READY' && !qrCode ? "Warte auf QR-Code vom Server" : "Verbinde WhatsApp für Live-Benachrichtigungen"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleConnectWhatsApp}
-                disabled={connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode)}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-400 transition-all disabled:opacity-50"
+          <AnimatePresence mode="wait">
+            {whatsapp?.status === 'CONNECTED' ? (
+              <motion.div
+                key="connected"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
               >
-                {connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode) ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <QrCode className="h-4 w-4" />
-                )}
-                Verbinden
-              </button>
-            </div>
-          )}
+                <Wifi className="h-5 w-5 text-emerald-400" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-400">Verbunden</p>
+                  {whatsapp.phoneNumber && (
+                    <p className="text-xs text-slate-400">{whatsapp.phoneNumber}</p>
+                  )}
+                </div>
+              </motion.div>
+            ) : qrCode ? (
+              <motion.div
+                key="qr"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col items-center justify-center py-6"
+              >
+                <p className="text-sm text-slate-300 mb-4 font-medium text-center">Scanne diesen QR-Code mit WhatsApp:</p>
+                <div className="p-4 bg-white rounded-2xl mb-4 shadow-[0_0_40px_-10px_rgba(16,185,129,0.3)]">
+                  <QRCode
+                    value={qrCode}
+                    size={200}
+                    level="H"
+                    fgColor="#020617"
+                    bgColor="#ffffff"
+                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 text-center max-w-[200px]">
+                  WhatsApp → Einstellungen → Verknüpfte Geräte → Gerät hinzufügen
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="disconnected"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col sm:flex-row items-center gap-4"
+              >
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 flex-1 w-full">
+                  <WifiOff className="h-5 w-5 text-slate-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-300">
+                      {whatsapp?.status === 'QR_READY' && !qrCode ? "Verbindung wird hergestellt..." : "Nicht verbunden"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {whatsapp?.status === 'QR_READY' && !qrCode ? "Warte auf QR-Code vom Server" : "Verbinde WhatsApp für Live-Benachrichtigungen"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleConnectWhatsApp}
+                  disabled={connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 sm:py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-400 transition-all disabled:opacity-50"
+                >
+                  {connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode) ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <QrCode className="h-4 w-4" />
+                  )}
+                  Verbinden
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
         {/* Notification Settings */}
