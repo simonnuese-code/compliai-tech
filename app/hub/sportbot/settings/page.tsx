@@ -84,6 +84,33 @@ export default function SportBotSettingsPage() {
     }
   }
 
+  // Poll for connection status
+  useEffect(() => {
+    if (!qrCode && whatsapp?.status !== 'QR_READY') return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/sportbot/whatsapp')
+        if (res.ok) {
+          const data = await res.json()
+          
+          if (data.status === 'CONNECTED') {
+            setWhatsapp(data)
+            setQrCode(null)
+            clearInterval(interval)
+          } else if (data.qrCode && data.qrCode !== qrCode) {
+            setQrCode(data.qrCode)
+            setWhatsapp(data)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to poll status:', err)
+      }
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [qrCode, whatsapp?.status])
+
   const handleConnectWhatsApp = async () => {
     setConnectingWA(true)
     try {
@@ -92,6 +119,10 @@ export default function SportBotSettingsPage() {
         const data = await res.json()
         if (data.qrCode) {
           setQrCode(data.qrCode)
+          if (whatsapp) setWhatsapp({ ...whatsapp, status: 'QR_READY' })
+        } else {
+          // Force polling to start immediately to fetch the QR code when ready
+          if (whatsapp) setWhatsapp({ ...whatsapp, status: 'QR_READY' })
         }
       }
     } catch (err) {
@@ -185,16 +216,20 @@ export default function SportBotSettingsPage() {
               <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 flex-1">
                 <WifiOff className="h-5 w-5 text-slate-500" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-300">Nicht verbunden</p>
-                  <p className="text-xs text-slate-500">Verbinde WhatsApp für Live-Benachrichtigungen</p>
+                  <p className="text-sm font-semibold text-slate-300">
+                    {whatsapp?.status === 'QR_READY' && !qrCode ? "Verbindung wird hergestellt..." : "Nicht verbunden"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {whatsapp?.status === 'QR_READY' && !qrCode ? "Warte auf QR-Code vom Server" : "Verbinde WhatsApp für Live-Benachrichtigungen"}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={handleConnectWhatsApp}
-                disabled={connectingWA}
+                disabled={connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode)}
                 className="flex items-center gap-2 px-5 py-3 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-400 transition-all disabled:opacity-50"
               >
-                {connectingWA ? (
+                {connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode) ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <QrCode className="h-4 w-4" />
