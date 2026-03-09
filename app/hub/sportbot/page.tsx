@@ -422,7 +422,7 @@ export default function SportBotPage() {
                       {activeTab === 'live'
                         ? 'Aktuell läuft kein Spiel deiner Teams.'
                         : activeTab === 'upcoming'
-                        ? 'Keine anstehenden Spiele in den nächsten 14 Tagen.'
+                        ? 'Keine anstehenden Spiele in den nächsten 10 Tagen.'
                         : 'Keine kürzlichen Ergebnisse.'}
                     </p>
                   </motion.div>

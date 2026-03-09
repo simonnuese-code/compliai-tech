@@ -69,8 +69,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ matches: dbMatches })
   }
 
-  // Upcoming matches (next 14 days)
-  const result = await getUpcomingMatchesForTeams(teamIds, 14)
+  // Upcoming matches (next 10 days)
+  const result = await getUpcomingMatchesForTeams(teamIds, 10)
   if (result.error) {
     // Fallback to DB cache
     const dbMatches = await prisma.sportMatch.findMany({
