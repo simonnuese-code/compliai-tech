@@ -207,7 +207,7 @@ export default function SportBotSettingsPage() {
             <div className="text-center py-6">
               <p className="text-sm text-slate-300 mb-4">Scanne diesen QR-Code mit WhatsApp:</p>
               <div className="inline-block p-4 bg-white rounded-2xl mb-4">
-                <img src={qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCode)}`} alt="WhatsApp QR Code" className="w-48 h-48" />
               </div>
               <p className="text-xs text-slate-500">WhatsApp → Einstellungen → Verknüpfte Geräte → Gerät hinzufügen</p>
             </div>
