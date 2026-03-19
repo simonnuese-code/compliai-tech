@@ -110,7 +110,7 @@ async function startSession(name) {
     }, QR_TIMEOUT_MS)
   })
 
-  client.on('ready', () => {
+  client.on('ready', async () => {
     console.log(`✅ [${name}] WhatsApp connected!`)
     sessionData.status = 'WORKING'
     sessionData.qr = null
@@ -119,6 +119,22 @@ async function startSession(name) {
     if (info?.wid?.user) {
       sessionData.phoneNumber = info.wid.user
       console.log(`📱 [${name}] Phone: +${info.wid.user}`)
+
+      // Send welcome message
+      try {
+        await client.sendMessage(`${info.wid.user}@c.us`,
+          '⚽ *CompliAI Sport-Bot verbunden!*\n\n' +
+          'Du erhältst ab jetzt Live-Benachrichtigungen für deine Teams:\n\n' +
+          '📢 Vor Spielbeginn\n' +
+          '⚽ Tore in Echtzeit\n' +
+          '⏸️ Halbzeit & Abpfiff\n' +
+          '🟥 Rote Karten\n\n' +
+          'Verwalte deine Teams und Einstellungen auf compliai.tech/hub/sportbot'
+        )
+        console.log(`📱 [${name}] Welcome message sent`)
+      } catch (err) {
+        console.error(`📱 [${name}] Welcome message failed:`, err.message)
+      }
     }
   })
 
