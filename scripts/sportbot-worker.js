@@ -867,12 +867,14 @@ async function syncOddsAndPredict() {
         where: { teamId: match.awayTeamId, competitionCode: compCode, season: currentYear },
       })
 
-      if (!homeStats || !awayStats) continue
+      // Default to league average (1.0) if team has no stats yet
+      const hs = homeStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0 }
+      const as_ = awayStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0 }
 
-      const homeAtk = homeStats.attackStrength * (1 - FORM_WEIGHT) + homeStats.formAttack * FORM_WEIGHT
-      const homeDef = homeStats.defenseStrength * (1 - FORM_WEIGHT) + homeStats.formDefense * FORM_WEIGHT
-      const awayAtk = awayStats.attackStrength * (1 - FORM_WEIGHT) + awayStats.formAttack * FORM_WEIGHT
-      const awayDef = awayStats.defenseStrength * (1 - FORM_WEIGHT) + awayStats.formDefense * FORM_WEIGHT
+      const homeAtk = hs.attackStrength * (1 - FORM_WEIGHT) + hs.formAttack * FORM_WEIGHT
+      const homeDef = hs.defenseStrength * (1 - FORM_WEIGHT) + hs.formDefense * FORM_WEIGHT
+      const awayAtk = as_.attackStrength * (1 - FORM_WEIGHT) + as_.formAttack * FORM_WEIGHT
+      const awayDef = as_.defenseStrength * (1 - FORM_WEIGHT) + as_.formDefense * FORM_WEIGHT
 
       const pred = predictMatch(homeAtk, homeDef, awayAtk, awayDef)
 

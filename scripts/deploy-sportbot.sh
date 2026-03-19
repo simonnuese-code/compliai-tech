@@ -127,6 +127,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/sportbot
+EnvironmentFile=/opt/sportbot/.env
 Environment=PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ExecStart=/usr/bin/node /opt/sportbot/whatsapp-bridge.js
 Restart=always
