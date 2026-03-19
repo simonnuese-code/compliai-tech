@@ -15,7 +15,9 @@
 
 const http = require('http')
 const { Client, LocalAuth } = require('whatsapp-web.js')
+const { PrismaClient } = require('@prisma/client')
 
+const prisma = new PrismaClient()
 const PORT = process.env.WA_BRIDGE_PORT || 3001
 const QR_TIMEOUT_MS = 120000 // 2 minutes — destroy session if QR not scanned
 
@@ -124,17 +126,61 @@ async function startSession(name) {
       try {
         await client.sendMessage(`${info.wid.user}@c.us`,
           '⚽ *CompliAI Sport-Bot verbunden!*\n\n' +
-          'Du erhältst ab jetzt Live-Benachrichtigungen für deine Teams:\n\n' +
+          'Du erhältst ab jetzt Live-Benachrichtigungen für deine Teams:\n' +
           '📢 Vor Spielbeginn\n' +
           '⚽ Tore in Echtzeit\n' +
           '⏸️ Halbzeit & Abpfiff\n' +
           '🟥 Rote Karten\n\n' +
-          'Verwalte deine Teams und Einstellungen auf compliai.tech/hub/sportbot'
+          '*Schreib mir jederzeit:*\n' +
+          '📊 *ergebnisse* — Letzte 7 Tage\n' +
+          '🔴 *live* — Aktuelle Spiele\n' +
+          '📅 *nächste* — Kommende Spiele\n' +
+          '❓ *hilfe* — Alle Befehle\n\n' +
+          'Teams verwalten: compliai.tech/hub/sportbot'
         )
         console.log(`📱 [${name}] Welcome message sent`)
       } catch (err) {
         console.error(`📱 [${name}] Welcome message failed:`, err.message)
       }
+    }
+  })
+
+  // Handle incoming messages — reply with match results
+  client.on('message', async msg => {
+    // Only respond to messages from the connected user (to themselves)
+    if (!sessionData.phoneNumber) return
+    const fromMe = msg.from === `${sessionData.phoneNumber}@c.us` || msg.fromMe
+    if (!fromMe) return
+
+    const text = (msg.body || '').trim().toLowerCase()
+    if (!text) return
+
+    console.log(`💬 [${name}] Message received: "${text}"`)
+
+    try {
+      // Find the user by their WhatsApp session
+      const waSession = await prisma.whatsAppSession.findFirst({
+        where: { sessionName: name },
+      })
+      if (!waSession) return
+
+      if (text === 'ergebnisse' || text === 'results' || text === 'spiele' || text === 'scores') {
+        await handleResultsCommand(client, msg, waSession.userId)
+      } else if (text === 'live') {
+        await handleLiveCommand(client, msg, waSession.userId)
+      } else if (text === 'next' || text === 'nächste' || text === 'kommende') {
+        await handleUpcomingCommand(client, msg, waSession.userId)
+      } else if (text === 'hilfe' || text === 'help' || text === '?') {
+        await msg.reply(
+          '⚽ *Sport-Bot Befehle*\n\n' +
+          '📊 *ergebnisse* — Ergebnisse der letzten 7 Tage\n' +
+          '🔴 *live* — Aktuelle Live-Spiele\n' +
+          '📅 *nächste* — Kommende Spiele\n' +
+          '❓ *hilfe* — Diese Hilfe anzeigen'
+        )
+      }
+    } catch (err) {
+      console.error(`💬 [${name}] Message handler error:`, err.message)
     }
   })
 
@@ -170,6 +216,124 @@ async function startSession(name) {
   }
 
   return { status: sessionData.status, qr: sessionData.qr }
+}
+
+// ===== CHAT COMMAND HANDLERS =====
+
+async function handleResultsCommand(client, msg, userId) {
+  const followedTeams = await prisma.followedTeam.findMany({
+    where: { userId },
+    select: { teamId: true, teamName: true },
+  })
+
+  if (followedTeams.length === 0) {
+    await msg.reply('Du folgst noch keinen Teams. Füge Teams auf compliai.tech/hub/sportbot/teams hinzu.')
+    return
+  }
+
+  const teamIds = followedTeams.map(t => t.teamId)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+  const matches = await prisma.sportMatch.findMany({
+    where: {
+      status: 'FINISHED',
+      utcDate: { gte: sevenDaysAgo },
+      OR: [
+        { homeTeamId: { in: teamIds } },
+        { awayTeamId: { in: teamIds } },
+      ],
+    },
+    orderBy: { utcDate: 'desc' },
+    take: 15,
+  })
+
+  if (matches.length === 0) {
+    await msg.reply('📊 Keine Ergebnisse in den letzten 7 Tagen für deine Teams.')
+    return
+  }
+
+  let reply = '📊 *Ergebnisse der letzten 7 Tage*\n'
+
+  for (const m of matches) {
+    const date = new Date(m.utcDate).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
+    const home = m.homeTeamName.length > 15 ? m.homeTeamName.slice(0, 15) : m.homeTeamName
+    const away = m.awayTeamName.length > 15 ? m.awayTeamName.slice(0, 15) : m.awayTeamName
+    reply += `\n${date}: ${home} *${m.homeScoreFullTime ?? '-'}:${m.awayScoreFullTime ?? '-'}* ${away}`
+    if (m.competitionName) reply += ` _(${m.competitionName})_`
+  }
+
+  await msg.reply(reply)
+}
+
+async function handleLiveCommand(client, msg, userId) {
+  const followedTeams = await prisma.followedTeam.findMany({
+    where: { userId },
+    select: { teamId: true },
+  })
+
+  const teamIds = followedTeams.map(t => t.teamId)
+
+  const matches = await prisma.sportMatch.findMany({
+    where: {
+      status: { in: ['IN_PLAY', 'PAUSED'] },
+      OR: [
+        { homeTeamId: { in: teamIds } },
+        { awayTeamId: { in: teamIds } },
+      ],
+    },
+    orderBy: { utcDate: 'asc' },
+  })
+
+  if (matches.length === 0) {
+    await msg.reply('🔴 Aktuell läuft kein Spiel deiner Teams.')
+    return
+  }
+
+  let reply = '🔴 *Live-Spiele*\n'
+  for (const m of matches) {
+    const status = m.status === 'PAUSED' ? '⏸️ HZ' : `${m.minute || ''}\'`
+    reply += `\n${status} ${m.homeTeamName} *${m.homeScoreFullTime ?? 0}:${m.awayScoreFullTime ?? 0}* ${m.awayTeamName}`
+  }
+
+  await msg.reply(reply)
+}
+
+async function handleUpcomingCommand(client, msg, userId) {
+  const followedTeams = await prisma.followedTeam.findMany({
+    where: { userId },
+    select: { teamId: true },
+  })
+
+  const teamIds = followedTeams.map(t => t.teamId)
+
+  const matches = await prisma.sportMatch.findMany({
+    where: {
+      status: { in: ['SCHEDULED', 'TIMED'] },
+      utcDate: { gte: new Date() },
+      OR: [
+        { homeTeamId: { in: teamIds } },
+        { awayTeamId: { in: teamIds } },
+      ],
+    },
+    orderBy: { utcDate: 'asc' },
+    take: 10,
+  })
+
+  if (matches.length === 0) {
+    await msg.reply('📅 Keine kommenden Spiele für deine Teams in den nächsten Tagen.')
+    return
+  }
+
+  let reply = '📅 *Kommende Spiele*\n'
+  for (const m of matches) {
+    const d = new Date(m.utcDate)
+    const date = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
+    const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })
+    reply += `\n${date} ${time}: ${m.homeTeamName} vs ${m.awayTeamName}`
+    if (m.competitionName) reply += ` _(${m.competitionName})_`
+  }
+
+  await msg.reply(reply)
 }
 
 async function sendText(sessionName, chatId, text) {
