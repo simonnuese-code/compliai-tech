@@ -479,7 +479,8 @@ async function checkLiveMatches() {
   }
 
   // Also process recently finished matches
-  const finishedData = await footballApi('/matches?status=FINISHED&dateFrom=' + new Date().toISOString().split('T')[0])
+  const todayStr = new Date().toISOString().split('T')[0]
+  const finishedData = await footballApi(`/matches?status=FINISHED&dateFrom=${todayStr}&dateTo=${todayStr}`)
   if (finishedData) {
     const finishedMatches = (finishedData.matches || []).filter(m =>
       allTeamIds.has(m.homeTeam.id) || allTeamIds.has(m.awayTeam.id)
