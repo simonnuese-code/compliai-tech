@@ -40,6 +40,7 @@ model User {
   followedTeams    FollowedTeam[]
   sportSettings    SportBotSettings?
   whatsappSession  WhatsAppSession?
+  valueBetSettings ValueBetSettings?
 
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
@@ -458,15 +459,129 @@ model SportBotSettings {
   id                    String   @id @default(cuid())
   userId                String   @unique
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   preMatchMinutes       Int      @default(15)  // How many minutes before to notify
   notificationsEnabled  Boolean  @default(true)
   quietHoursStart       String?  // e.g. "23:00"
   quietHoursEnd         String?  // e.g. "07:00"
   timezone              String   @default("Europe/Berlin")
-  
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  
+
   @@map("sportbot_settings")
+}
+
+// ===========================================
+// VALUE BETTING MODELS
+// ===========================================
+
+model TeamStats {
+  id                String   @id @default(cuid())
+  teamId            Int      // football-data.org team ID
+  teamName          String
+  competitionCode   String   // e.g. "BL1"
+  season            Int      // e.g. 2025
+
+  // Attack/defense strength (relative to league average)
+  attackStrength    Float    @default(1.0)
+  defenseStrength   Float    @default(1.0)
+
+  // Raw stats
+  matchesPlayed     Int      @default(0)
+  goalsScored       Int      @default(0)
+  goalsConceded     Int      @default(0)
+  homeGoalsScored   Int      @default(0)
+  homeGoalsConceded Int      @default(0)
+  awayGoalsScored   Int      @default(0)
+  awayGoalsConceded Int      @default(0)
+  homeMatchesPlayed Int      @default(0)
+  awayMatchesPlayed Int      @default(0)
+
+  // Form (last 5 matches weighted)
+  formAttack        Float    @default(1.0)
+  formDefense       Float    @default(1.0)
+
+  updatedAt         DateTime @updatedAt
+
+  @@unique([teamId, competitionCode, season])
+  @@index([teamId])
+  @@index([competitionCode, season])
+  @@map("team_stats")
+}
+
+model MatchOdds {
+  id                String   @id @default(cuid())
+  matchExternalId   Int      // football-data.org match ID
+
+  bookmaker         String   // e.g. "bet365", "pinnacle"
+  homeOdds          Float
+  drawOdds          Float
+  awayOdds          Float
+
+  overUnder25Home   Float?   // Over 2.5 goals odds
+  overUnder25Away   Float?   // Under 2.5 goals odds
+
+  fetchedAt         DateTime @default(now())
+
+  @@unique([matchExternalId, bookmaker])
+  @@index([matchExternalId])
+  @@map("match_odds")
+}
+
+model MatchPrediction {
+  id                String   @id @default(cuid())
+  matchExternalId   Int      @unique // football-data.org match ID
+
+  // Poisson model probabilities
+  homeWinProb       Float
+  drawProb          Float
+  awayWinProb       Float
+  overProb          Float    // Over 2.5 goals
+  underProb         Float    // Under 2.5 goals
+
+  // Expected goals
+  expectedHomeGoals Float
+  expectedAwayGoals Float
+
+  // Best value bets found
+  bestValueMarket   String?  // "home", "draw", "away", "over", "under"
+  bestValueEV       Float?   // Expected value of best bet
+  bestValueOdds     Float?   // Odds for best value bet
+  bestValueBookmaker String?
+  kellyStake        Float?   // Kelly criterion recommended stake %
+
+  // Model metadata
+  modelVersion      String   @default("poisson_v1")
+  confidence        Float    @default(0.5) // 0-1 model confidence
+
+  // Actual result (filled after match)
+  actualResult      String?  // "home", "draw", "away"
+  actualHomeGoals   Int?
+  actualAwayGoals   Int?
+  brierScore        Float?   // Prediction accuracy metric (lower = better)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([matchExternalId])
+  @@index([bestValueEV])
+  @@map("match_predictions")
+}
+
+model ValueBetSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  enabled               Boolean  @default(true)
+  minEV                 Float    @default(0.05)  // Minimum 5% EV to notify
+  maxKellyStake         Float    @default(0.25)  // 25% fractional Kelly
+  bankroll              Float    @default(100.0) // Starting bankroll in EUR
+  notifyWhatsApp        Boolean  @default(true)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("value_bet_settings")
 }

@@ -95,6 +95,7 @@ echo "🔐 Step 5: Setting up environment..."
 
 # Read API key from local .env.local if available
 LOCAL_FOOTBALL_KEY=$(grep FOOTBALL_DATA_API_KEY .env.local 2>/dev/null | cut -d'"' -f2 || echo "")
+LOCAL_ODDS_KEY=$(grep ODDS_API_KEY .env.local 2>/dev/null | cut -d'"' -f2 || echo "")
 LOCAL_DB_URL=$(grep DATABASE_URL .env.local 2>/dev/null | cut -d'"' -f2 || grep DATABASE_URL .env 2>/dev/null | cut -d'"' -f2 || echo "")
 
 if [ -z "$LOCAL_DB_URL" ]; then
@@ -105,6 +106,7 @@ ssh $SSH_OPTS $SERVER "
   cat > $REMOTE_DIR/.env << 'ENVFILE'
 DATABASE_URL=\"$LOCAL_DB_URL\"
 FOOTBALL_DATA_API_KEY=\"$LOCAL_FOOTBALL_KEY\"
+ODDS_API_KEY=\"$LOCAL_ODDS_KEY\"
 WAHA_URL=\"http://localhost:3001\"
 WAHA_API_KEY=\"\"
 ENVFILE

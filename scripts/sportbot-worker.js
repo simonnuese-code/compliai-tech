@@ -14,7 +14,9 @@ const DATABASE_URL = process.env.DATABASE_URL
 const FOOTBALL_API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
 const WAHA_URL = process.env.WAHA_URL || 'http://localhost:3001'
 const WAHA_API_KEY = process.env.WAHA_API_KEY || ''
+const ODDS_API_KEY = process.env.ODDS_API_KEY || ''
 const FOOTBALL_API_BASE = 'https://api.football-data.org/v4'
+const ODDS_API_BASE = 'https://api.the-odds-api.com/v4'
 
 const prisma = new PrismaClient()
 
@@ -483,6 +485,555 @@ async function syncWhatsAppSessions() {
   }
 }
 
+// ===== VALUE BETTING: POISSON MODEL =====
+
+const FORM_WEIGHT = 0.3
+const MAX_GOALS = 8
+
+function poissonPmf(lambda, k) {
+  if (lambda <= 0) return k === 0 ? 1 : 0
+  let factorial = 1
+  for (let i = 2; i <= k; i++) factorial *= i
+  return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial
+}
+
+function predictMatch(homeAttack, homeDefense, awayAttack, awayDefense, leagueHomeAvg = 1.55, leagueAwayAvg = 1.25) {
+  const homeXG = Math.max(0.2, Math.min(5.0, homeAttack * awayDefense * leagueHomeAvg))
+  const awayXG = Math.max(0.2, Math.min(5.0, awayAttack * homeDefense * leagueAwayAvg))
+
+  let homeWin = 0, draw = 0, awayWin = 0, over25 = 0
+  for (let h = 0; h <= MAX_GOALS; h++) {
+    for (let a = 0; a <= MAX_GOALS; a++) {
+      const prob = poissonPmf(homeXG, h) * poissonPmf(awayXG, a)
+      if (h > a) homeWin += prob
+      else if (h === a) draw += prob
+      else awayWin += prob
+      if (h + a > 2) over25 += prob
+    }
+  }
+
+  return { homeWin, draw, awayWin, over25, under25: 1 - over25, homeXG, awayXG }
+}
+
+function calculateEV(trueProb, decimalOdds) {
+  return (trueProb * decimalOdds) - 1
+}
+
+function kellyStake(trueProb, decimalOdds, fraction = 0.25) {
+  const b = decimalOdds - 1
+  if (b <= 0) return 0
+  const kelly = ((trueProb * (b + 1)) - 1) / b
+  return Math.max(0, kelly * fraction)
+}
+
+// Competition code -> Odds API sport key
+const COMP_TO_ODDS = {
+  'BL1': 'soccer_germany_bundesliga',
+  'PL': 'soccer_epl',
+  'PD': 'soccer_spain_la_liga',
+  'SA': 'soccer_italy_serie_a',
+  'FL1': 'soccer_france_ligue_one',
+  'ELC': 'soccer_england_league1',
+  'DED': 'soccer_netherlands_eredivisie',
+  'PPL': 'soccer_portugal_primeira_liga',
+  'CL': 'soccer_uefa_champs_league',
+}
+
+// Team name aliases for matching between APIs
+const TEAM_ALIASES = {
+  'FC Bayern München': ['Bayern Munich', 'FC Bayern Munich'],
+  'Borussia Dortmund': ['Borussia Dortmund', 'Dortmund'],
+  'Bayer 04 Leverkusen': ['Bayer Leverkusen', 'Bayer 04 Leverkusen'],
+  'RB Leipzig': ['RB Leipzig', 'Leipzig'],
+  'VfB Stuttgart': ['VfB Stuttgart', 'Stuttgart'],
+  'Eintracht Frankfurt': ['Eintracht Frankfurt', 'Frankfurt'],
+  'VfL Wolfsburg': ['VfL Wolfsburg', 'Wolfsburg'],
+  'SC Freiburg': ['SC Freiburg', 'Freiburg'],
+  'Borussia Mönchengladbach': ['Borussia Monchengladbach', 'Gladbach'],
+  '1. FC Union Berlin': ['Union Berlin'],
+  'SV Werder Bremen': ['Werder Bremen'],
+  '1. FSV Mainz 05': ['FSV Mainz 05', 'Mainz 05'],
+  'Manchester City FC': ['Manchester City'],
+  'Arsenal FC': ['Arsenal'],
+  'Liverpool FC': ['Liverpool'],
+  'Manchester United FC': ['Manchester United'],
+  'Chelsea FC': ['Chelsea'],
+  'Tottenham Hotspur FC': ['Tottenham Hotspur', 'Tottenham'],
+  'FC Barcelona': ['Barcelona'],
+  'Real Madrid CF': ['Real Madrid'],
+  'Club Atlético de Madrid': ['Atletico Madrid'],
+  'FC Internazionale Milano': ['Inter Milan', 'Inter'],
+  'AC Milan': ['AC Milan'],
+  'Juventus FC': ['Juventus'],
+  'SSC Napoli': ['Napoli'],
+}
+
+function matchTeamName(fdName, oddsNames) {
+  if (oddsNames.includes(fdName)) return fdName
+  const aliases = TEAM_ALIASES[fdName]
+  if (aliases) {
+    for (const alias of aliases) {
+      const found = oddsNames.find(n => n.toLowerCase() === alias.toLowerCase())
+      if (found) return found
+    }
+  }
+  // Fuzzy: substring match
+  const fdLower = fdName.toLowerCase()
+  for (const name of oddsNames) {
+    if (fdLower.includes(name.toLowerCase()) || name.toLowerCase().includes(fdLower)) return name
+  }
+  return null
+}
+
+// ===== ODDS API =====
+
+async function fetchOddsForCompetition(competitionCode) {
+  if (!ODDS_API_KEY) return []
+  const sportKey = COMP_TO_ODDS[competitionCode]
+  if (!sportKey) return []
+
+  try {
+    const url = `${ODDS_API_BASE}/sports/${sportKey}/odds/?apiKey=${ODDS_API_KEY}&regions=eu&markets=h2h,totals&oddsFormat=decimal`
+    const res = await fetch(url)
+    if (!res.ok) {
+      console.error(`📊 Odds API error (${res.status}):`, await res.text())
+      return []
+    }
+    const remaining = res.headers.get('x-requests-remaining')
+    console.log(`📊 Odds API: ${remaining} credits remaining`)
+    return await res.json()
+  } catch (err) {
+    console.error('📊 Odds API fetch error:', err.message)
+    return []
+  }
+}
+
+// ===== TEAM STATS & PREDICTIONS =====
+
+async function updateTeamStats() {
+  console.log('📊 Updating team stats...')
+
+  // Get all finished matches from DB
+  const currentYear = new Date().getFullYear()
+  const seasonStart = new Date(`${currentYear - 1}-08-01`)
+
+  const finishedMatches = await prisma.sportMatch.findMany({
+    where: {
+      status: 'FINISHED',
+      utcDate: { gte: seasonStart },
+      homeScoreFullTime: { not: null },
+      awayScoreFullTime: { not: null },
+    },
+    orderBy: { utcDate: 'asc' },
+  })
+
+  if (finishedMatches.length === 0) return
+
+  // Group by competition
+  const byComp = {}
+  for (const m of finishedMatches) {
+    if (!byComp[m.competitionCode]) byComp[m.competitionCode] = []
+    byComp[m.competitionCode].push(m)
+  }
+
+  for (const [compCode, matches] of Object.entries(byComp)) {
+    // Calculate league averages
+    let totalHomeGoals = 0, totalAwayGoals = 0, totalMatches = 0
+    for (const m of matches) {
+      totalHomeGoals += m.homeScoreFullTime
+      totalAwayGoals += m.awayScoreFullTime
+      totalMatches++
+    }
+    const avgHomeGoals = totalMatches > 0 ? totalHomeGoals / totalMatches : 1.55
+    const avgAwayGoals = totalMatches > 0 ? totalAwayGoals / totalMatches : 1.25
+
+    // Calculate per-team stats
+    const teamData = {}
+    for (const m of matches) {
+      for (const [teamId, isHome] of [[m.homeTeamId, true], [m.awayTeamId, false]]) {
+        if (!teamData[teamId]) {
+          teamData[teamId] = {
+            teamName: isHome ? m.homeTeamName : m.awayTeamName,
+            goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
+            homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
+            awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
+            recentMatches: [],
+          }
+        }
+        const t = teamData[teamId]
+        const scored = isHome ? m.homeScoreFullTime : m.awayScoreFullTime
+        const conceded = isHome ? m.awayScoreFullTime : m.homeScoreFullTime
+        t.goalsScored += scored
+        t.goalsConceded += conceded
+        t.matchesPlayed++
+        if (isHome) {
+          t.homeGoalsScored += scored
+          t.homeGoalsConceded += conceded
+          t.homeMatches++
+        } else {
+          t.awayGoalsScored += scored
+          t.awayGoalsConceded += conceded
+          t.awayMatches++
+        }
+        t.recentMatches.push({ scored, conceded, date: m.utcDate })
+      }
+    }
+
+    // Upsert stats to DB
+    const season = currentYear
+    for (const [teamIdStr, data] of Object.entries(teamData)) {
+      const teamId = parseInt(teamIdStr)
+      const attack = data.matchesPlayed > 0 && avgHomeGoals > 0
+        ? (data.goalsScored / data.matchesPlayed) / ((avgHomeGoals + avgAwayGoals) / 2) : 1.0
+      const defense = data.matchesPlayed > 0 && avgAwayGoals > 0
+        ? (data.goalsConceded / data.matchesPlayed) / ((avgHomeGoals + avgAwayGoals) / 2) : 1.0
+
+      // Form: last 5 matches, weighted (most recent = highest weight)
+      const recent = data.recentMatches.slice(-5)
+      let formAttack = attack, formDefense = defense
+      if (recent.length >= 3) {
+        let wScored = 0, wConceded = 0, wSum = 0
+        recent.forEach((m, i) => {
+          const w = i + 1 // Linear weight: 1,2,3,4,5
+          wScored += m.scored * w
+          wConceded += m.conceded * w
+          wSum += w
+        })
+        const avgOverall = (avgHomeGoals + avgAwayGoals) / 2
+        formAttack = avgOverall > 0 ? (wScored / wSum) / avgOverall : 1.0
+        formDefense = avgOverall > 0 ? (wConceded / wSum) / avgOverall : 1.0
+      }
+
+      await prisma.teamStats.upsert({
+        where: {
+          teamId_competitionCode_season: { teamId, competitionCode: compCode, season },
+        },
+        update: {
+          teamName: data.teamName,
+          attackStrength: parseFloat(attack.toFixed(4)),
+          defenseStrength: parseFloat(defense.toFixed(4)),
+          matchesPlayed: data.matchesPlayed,
+          goalsScored: data.goalsScored,
+          goalsConceded: data.goalsConceded,
+          homeGoalsScored: data.homeGoalsScored,
+          homeGoalsConceded: data.homeGoalsConceded,
+          awayGoalsScored: data.awayGoalsScored,
+          awayGoalsConceded: data.awayGoalsConceded,
+          homeMatchesPlayed: data.homeMatches,
+          awayMatchesPlayed: data.awayMatches,
+          formAttack: parseFloat(formAttack.toFixed(4)),
+          formDefense: parseFloat(formDefense.toFixed(4)),
+        },
+        create: {
+          teamId,
+          teamName: data.teamName,
+          competitionCode: compCode,
+          season,
+          attackStrength: parseFloat(attack.toFixed(4)),
+          defenseStrength: parseFloat(defense.toFixed(4)),
+          matchesPlayed: data.matchesPlayed,
+          goalsScored: data.goalsScored,
+          goalsConceded: data.goalsConceded,
+          homeGoalsScored: data.homeGoalsScored,
+          homeGoalsConceded: data.homeGoalsConceded,
+          awayGoalsScored: data.awayGoalsScored,
+          awayGoalsConceded: data.awayGoalsConceded,
+          homeMatchesPlayed: data.homeMatches,
+          awayMatchesPlayed: data.awayMatches,
+          formAttack: parseFloat(formAttack.toFixed(4)),
+          formDefense: parseFloat(formDefense.toFixed(4)),
+        },
+      })
+    }
+
+    console.log(`📊 Updated stats for ${Object.keys(teamData).length} teams in ${compCode}`)
+  }
+}
+
+async function syncOddsAndPredict() {
+  if (!ODDS_API_KEY) {
+    console.log('📊 No ODDS_API_KEY set, skipping odds sync')
+    return
+  }
+  console.log('📊 Syncing odds & generating predictions...')
+
+  // Get upcoming matches for followed teams
+  const allFollowed = await prisma.followedTeam.findMany({
+    select: { teamId: true },
+    distinct: ['teamId'],
+  })
+  const teamIds = new Set(allFollowed.map(t => t.teamId))
+
+  const upcomingMatches = await prisma.sportMatch.findMany({
+    where: {
+      status: { in: ['SCHEDULED', 'TIMED'] },
+      utcDate: { gte: new Date(), lte: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) },
+      OR: [
+        { homeTeamId: { in: [...teamIds] } },
+        { awayTeamId: { in: [...teamIds] } },
+      ],
+    },
+    orderBy: { utcDate: 'asc' },
+  })
+
+  if (upcomingMatches.length === 0) return
+
+  // Group matches by competition
+  const matchesByComp = {}
+  for (const m of upcomingMatches) {
+    if (!matchesByComp[m.competitionCode]) matchesByComp[m.competitionCode] = []
+    matchesByComp[m.competitionCode].push(m)
+  }
+
+  const currentYear = new Date().getFullYear()
+
+  for (const [compCode, matches] of Object.entries(matchesByComp)) {
+    // Fetch odds from The Odds API
+    const oddsEvents = await fetchOddsForCompetition(compCode)
+    if (oddsEvents.length === 0) continue
+
+    // Build list of all team names from odds
+    const allOddsTeams = new Set()
+    for (const ev of oddsEvents) {
+      allOddsTeams.add(ev.home_team)
+      allOddsTeams.add(ev.away_team)
+    }
+
+    for (const match of matches) {
+      // Match teams to odds event
+      const oddsHome = matchTeamName(match.homeTeamName, [...allOddsTeams])
+      const oddsAway = matchTeamName(match.awayTeamName, [...allOddsTeams])
+
+      const oddsEvent = oddsEvents.find(ev =>
+        (ev.home_team === oddsHome && ev.away_team === oddsAway) ||
+        (ev.home_team === oddsAway && ev.away_team === oddsHome)
+      )
+
+      if (!oddsEvent) continue
+
+      // Save odds from each bookmaker
+      for (const bm of oddsEvent.bookmakers || []) {
+        const h2h = bm.markets?.find(m => m.key === 'h2h')
+        const totals = bm.markets?.find(m => m.key === 'totals')
+        if (!h2h) continue
+
+        const homeOutcome = h2h.outcomes?.find(o => o.name === oddsEvent.home_team)
+        const drawOutcome = h2h.outcomes?.find(o => o.name === 'Draw')
+        const awayOutcome = h2h.outcomes?.find(o => o.name === oddsEvent.away_team)
+        if (!homeOutcome || !drawOutcome || !awayOutcome) continue
+
+        // Check if home/away are flipped vs our match
+        const isFlipped = oddsEvent.home_team === oddsAway
+        const homeOdds = isFlipped ? awayOutcome.price : homeOutcome.price
+        const awayOdds = isFlipped ? homeOutcome.price : awayOutcome.price
+
+        let overOdds = null, underOdds = null
+        if (totals) {
+          const over = totals.outcomes?.find(o => o.name === 'Over' && o.point === 2.5)
+          const under = totals.outcomes?.find(o => o.name === 'Under' && o.point === 2.5)
+          if (over) overOdds = over.price
+          if (under) underOdds = under.price
+        }
+
+        await prisma.matchOdds.upsert({
+          where: {
+            matchExternalId_bookmaker: { matchExternalId: match.externalId, bookmaker: bm.title },
+          },
+          update: {
+            homeOdds,
+            drawOdds: drawOutcome.price,
+            awayOdds,
+            overUnder25Home: overOdds,
+            overUnder25Away: underOdds,
+            fetchedAt: new Date(),
+          },
+          create: {
+            matchExternalId: match.externalId,
+            bookmaker: bm.title,
+            homeOdds,
+            drawOdds: drawOutcome.price,
+            awayOdds,
+            overUnder25Home: overOdds,
+            overUnder25Away: underOdds,
+          },
+        })
+      }
+
+      // Generate prediction
+      const homeStats = await prisma.teamStats.findFirst({
+        where: { teamId: match.homeTeamId, competitionCode: compCode, season: currentYear },
+      })
+      const awayStats = await prisma.teamStats.findFirst({
+        where: { teamId: match.awayTeamId, competitionCode: compCode, season: currentYear },
+      })
+
+      if (!homeStats || !awayStats) continue
+
+      const homeAtk = homeStats.attackStrength * (1 - FORM_WEIGHT) + homeStats.formAttack * FORM_WEIGHT
+      const homeDef = homeStats.defenseStrength * (1 - FORM_WEIGHT) + homeStats.formDefense * FORM_WEIGHT
+      const awayAtk = awayStats.attackStrength * (1 - FORM_WEIGHT) + awayStats.formAttack * FORM_WEIGHT
+      const awayDef = awayStats.defenseStrength * (1 - FORM_WEIGHT) + awayStats.formDefense * FORM_WEIGHT
+
+      const pred = predictMatch(homeAtk, homeDef, awayAtk, awayDef)
+
+      // Find best value bet across all bookmakers
+      const matchOdds = await prisma.matchOdds.findMany({
+        where: { matchExternalId: match.externalId },
+      })
+
+      let bestMarket = null, bestEV = -1, bestOdds = 0, bestBookmaker = null, bestKelly = 0
+      for (const odds of matchOdds) {
+        const markets = [
+          { market: 'home', prob: pred.homeWin, odds: odds.homeOdds },
+          { market: 'draw', prob: pred.draw, odds: odds.drawOdds },
+          { market: 'away', prob: pred.awayWin, odds: odds.awayOdds },
+        ]
+        if (odds.overUnder25Home) markets.push({ market: 'over25', prob: pred.over25, odds: odds.overUnder25Home })
+        if (odds.overUnder25Away) markets.push({ market: 'under25', prob: pred.under25, odds: odds.overUnder25Away })
+
+        for (const m of markets) {
+          const ev = calculateEV(m.prob, m.odds)
+          if (ev > bestEV) {
+            bestEV = ev
+            bestMarket = m.market
+            bestOdds = m.odds
+            bestBookmaker = odds.bookmaker
+            bestKelly = kellyStake(m.prob, m.odds, 0.25)
+          }
+        }
+      }
+
+      await prisma.matchPrediction.upsert({
+        where: { matchExternalId: match.externalId },
+        update: {
+          homeWinProb: pred.homeWin,
+          drawProb: pred.draw,
+          awayWinProb: pred.awayWin,
+          overProb: pred.over25,
+          underProb: pred.under25,
+          expectedHomeGoals: pred.homeXG,
+          expectedAwayGoals: pred.awayXG,
+          bestValueMarket: bestEV >= 0.05 ? bestMarket : null,
+          bestValueEV: bestEV >= 0.05 ? bestEV : null,
+          bestValueOdds: bestEV >= 0.05 ? bestOdds : null,
+          bestValueBookmaker: bestEV >= 0.05 ? bestBookmaker : null,
+          kellyStake: bestEV >= 0.05 ? bestKelly : null,
+        },
+        create: {
+          matchExternalId: match.externalId,
+          homeWinProb: pred.homeWin,
+          drawProb: pred.draw,
+          awayWinProb: pred.awayWin,
+          overProb: pred.over25,
+          underProb: pred.under25,
+          expectedHomeGoals: pred.homeXG,
+          expectedAwayGoals: pred.awayXG,
+          bestValueMarket: bestEV >= 0.05 ? bestMarket : null,
+          bestValueEV: bestEV >= 0.05 ? bestEV : null,
+          bestValueOdds: bestEV >= 0.05 ? bestOdds : null,
+          bestValueBookmaker: bestEV >= 0.05 ? bestBookmaker : null,
+          kellyStake: bestEV >= 0.05 ? bestKelly : null,
+        },
+      })
+    }
+  }
+
+  console.log('📊 Odds & predictions sync complete')
+}
+
+// Update Brier scores for finished matches
+async function updateBrierScores() {
+  const predictions = await prisma.matchPrediction.findMany({
+    where: { actualResult: null },
+  })
+
+  for (const pred of predictions) {
+    const match = await prisma.sportMatch.findUnique({
+      where: { externalId: pred.matchExternalId },
+    })
+    if (!match || match.status !== 'FINISHED') continue
+    if (match.homeScoreFullTime === null || match.awayScoreFullTime === null) continue
+
+    const actual = match.homeScoreFullTime > match.awayScoreFullTime ? 'home'
+      : match.homeScoreFullTime < match.awayScoreFullTime ? 'away'
+      : 'draw'
+
+    const actualVec = { home: actual === 'home' ? 1 : 0, draw: actual === 'draw' ? 1 : 0, away: actual === 'away' ? 1 : 0 }
+    const brier = (
+      Math.pow(pred.homeWinProb - actualVec.home, 2) +
+      Math.pow(pred.drawProb - actualVec.draw, 2) +
+      Math.pow(pred.awayWinProb - actualVec.away, 2)
+    ) / 3
+
+    await prisma.matchPrediction.update({
+      where: { id: pred.id },
+      data: {
+        actualResult: actual,
+        actualHomeGoals: match.homeScoreFullTime,
+        actualAwayGoals: match.awayScoreFullTime,
+        brierScore: parseFloat(brier.toFixed(6)),
+      },
+    })
+  }
+}
+
+// Send value bet notifications via WhatsApp
+async function sendValueBetNotifications() {
+  if (!ODDS_API_KEY) return
+
+  const users = await prisma.valueBetSettings.findMany({
+    where: { enabled: true, notifyWhatsApp: true },
+  })
+
+  for (const settings of users) {
+    const wa = await prisma.whatsAppSession.findUnique({ where: { userId: settings.userId } })
+    if (!wa || wa.status !== 'CONNECTED' || !wa.phoneNumber) continue
+
+    const followed = await prisma.followedTeam.findMany({
+      where: { userId: settings.userId },
+      select: { teamId: true },
+    })
+    const teamIds = followed.map(t => t.teamId)
+
+    // Get predictions with value bets for upcoming matches of followed teams
+    const tomorrow = new Date(Date.now() + 48 * 60 * 60 * 1000)
+    const matches = await prisma.sportMatch.findMany({
+      where: {
+        status: { in: ['SCHEDULED', 'TIMED'] },
+        utcDate: { gte: new Date(), lte: tomorrow },
+        OR: [
+          { homeTeamId: { in: teamIds } },
+          { awayTeamId: { in: teamIds } },
+        ],
+      },
+    })
+
+    for (const match of matches) {
+      const pred = await prisma.matchPrediction.findUnique({
+        where: { matchExternalId: match.externalId },
+      })
+      if (!pred || !pred.bestValueMarket || (pred.bestValueEV || 0) < settings.minEV) continue
+
+      const eventKey = `match_${match.externalId}_valuebet_${pred.bestValueMarket}`
+      const marketNames = { home: 'Heimsieg', draw: 'Unentschieden', away: 'Auswärtssieg', over25: 'Über 2.5', under25: 'Unter 2.5' }
+      const stake = (pred.kellyStake || 0) * settings.bankroll
+
+      const msg = `💰 *VALUE BET GEFUNDEN!*\n\n` +
+        `${match.homeTeamName} vs ${match.awayTeamName}\n` +
+        `🏆 ${match.competitionName}\n` +
+        `📅 ${new Date(match.utcDate).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} ${new Date(match.utcDate).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}\n\n` +
+        `📊 *Empfehlung: ${marketNames[pred.bestValueMarket] || pred.bestValueMarket}*\n` +
+        `📈 Quote: ${pred.bestValueOdds?.toFixed(2)} (${pred.bestValueBookmaker})\n` +
+        `🎯 Modell: ${(pred.homeWinProb * 100).toFixed(0)}% / ${(pred.drawProb * 100).toFixed(0)}% / ${(pred.awayWinProb * 100).toFixed(0)}%\n` +
+        `✅ EV: +${((pred.bestValueEV || 0) * 100).toFixed(1)}%\n` +
+        `💶 Kelly: ${stake.toFixed(2)}€ (${((pred.kellyStake || 0) * 100).toFixed(1)}%)\n\n` +
+        `⚽ xG: ${pred.expectedHomeGoals.toFixed(1)} - ${pred.expectedAwayGoals.toFixed(1)}`
+
+      await sendNotification(settings.userId, match.externalId, eventKey, msg)
+    }
+  }
+}
+
 // ===== MAIN LOOP =====
 
 let isLiveMode = false
@@ -545,15 +1096,19 @@ function sleep(ms) {
 async function main() {
   console.log('🏆 CompliAI Sport-Bot Worker starting...')
   console.log(`📡 Football API: ${FOOTBALL_API_KEY ? '✅ Key configured' : '❌ No key!'}`)
+  console.log(`📊 Odds API: ${ODDS_API_KEY ? '✅ Key configured' : '⚠️ No key (value bets disabled)'}`)
   console.log(`📱 WAHA URL: ${WAHA_URL}`)
   console.log(`🗄️ Database: ${DATABASE_URL ? '✅ Connected' : '❌ No DB URL!'}`)
 
   // Initial sync
   await syncUpcomingMatches()
   await syncWhatsAppSessions()
+  await updateTeamStats()
+  await syncOddsAndPredict()
 
   let lastSyncTime = Date.now()
   let lastWaSyncTime = Date.now()
+  let lastOddsSyncTime = Date.now()
   let loopCount = 0
 
   while (true) {
@@ -575,7 +1130,16 @@ async function main() {
       // Re-sync schedule every 6 hours
       if (Date.now() - lastSyncTime > 6 * 60 * 60 * 1000) {
         await syncUpcomingMatches()
+        await updateTeamStats()
         lastSyncTime = Date.now()
+      }
+
+      // Sync odds every 2 hours (to save API credits — 500/month limit)
+      if (Date.now() - lastOddsSyncTime > 2 * 60 * 60 * 1000) {
+        await syncOddsAndPredict()
+        await updateBrierScores()
+        await sendValueBetNotifications()
+        lastOddsSyncTime = Date.now()
       }
 
       // Log status every 10 minutes

@@ -32,6 +32,43 @@ interface FollowedTeam {
   leagueEmblem: string | null
 }
 
+interface ValueBetMatch {
+  match: {
+    externalId: number
+    homeTeamName: string
+    awayTeamName: string
+    homeTeamCrest: string | null
+    awayTeamCrest: string | null
+    competitionName: string
+    competitionEmblem: string | null
+    utcDate: string
+    status: string
+  }
+  prediction: {
+    homeWinProb: number
+    drawProb: number
+    awayWinProb: number
+    overProb: number
+    underProb: number
+    expectedHomeGoals: number
+    expectedAwayGoals: number
+    bestValueMarket: string | null
+    bestValueEV: number | null
+    bestValueOdds: number | null
+    bestValueBookmaker: string | null
+    kellyStake: number | null
+    confidence: number
+  } | null
+  odds: Array<{
+    bookmaker: string
+    homeOdds: number
+    drawOdds: number
+    awayOdds: number
+    overOdds: number | null
+    underOdds: number | null
+  }>
+}
+
 interface Match {
   id?: number
   externalId?: number
@@ -167,6 +204,136 @@ function MatchCard({ match, isLive }: { match: Match; isLive?: boolean }) {
   )
 }
 
+const MARKET_LABELS: Record<string, string> = {
+  home: 'Heimsieg (1)',
+  draw: 'Unentschieden (X)',
+  away: 'Auswärtssieg (2)',
+  over25: 'Über 2.5 Tore',
+  under25: 'Unter 2.5 Tore',
+}
+
+function ValueBetCard({ data }: { data: ValueBetMatch }) {
+  const { match, prediction, odds } = data
+  const d = new Date(match.utcDate)
+  const hasValue = prediction?.bestValueMarket && (prediction?.bestValueEV ?? 0) > 0
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`relative overflow-hidden rounded-2xl border backdrop-blur-xl p-5 transition-all duration-300 ${
+        hasValue
+          ? 'border-amber-500/30 bg-amber-500/5 shadow-lg shadow-amber-500/10'
+          : 'border-white/10 bg-white/5'
+      }`}
+    >
+      {hasValue && (
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-500/20">
+          <TrendingUp className="h-3 w-3 text-amber-400" />
+          <span className="text-xs font-bold text-amber-400">VALUE</span>
+        </div>
+      )}
+
+      {/* Competition */}
+      <div className="flex items-center gap-2 mb-3">
+        {match.competitionEmblem && (
+          <Image src={match.competitionEmblem} alt="" width={16} height={16} className="rounded-sm" unoptimized />
+        )}
+        <span className="text-xs text-slate-500 font-medium">{match.competitionName}</span>
+        <span className="text-xs text-slate-600">• {formatMatchDate(d)} {formatMatchTime(d)}</span>
+      </div>
+
+      {/* Teams */}
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {match.homeTeamCrest && (
+            <Image src={match.homeTeamCrest} alt="" width={32} height={32} className="rounded-lg flex-shrink-0" unoptimized />
+          )}
+          <span className="text-sm font-semibold text-white truncate">{match.homeTeamName}</span>
+        </div>
+        <span className="text-slate-500 text-sm font-medium">vs</span>
+        <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
+          <span className="text-sm font-semibold text-white truncate text-right">{match.awayTeamName}</span>
+          {match.awayTeamCrest && (
+            <Image src={match.awayTeamCrest} alt="" width={32} height={32} className="rounded-lg flex-shrink-0" unoptimized />
+          )}
+        </div>
+      </div>
+
+      {prediction ? (
+        <>
+          {/* Probability bar */}
+          <div className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-emerald-400">{(prediction.homeWinProb * 100).toFixed(0)}%</span>
+              <span className="text-slate-400">{(prediction.drawProb * 100).toFixed(0)}%</span>
+              <span className="text-blue-400">{(prediction.awayWinProb * 100).toFixed(0)}%</span>
+            </div>
+            <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
+              <div className="bg-emerald-500" style={{ width: `${prediction.homeWinProb * 100}%` }} />
+              <div className="bg-slate-500" style={{ width: `${prediction.drawProb * 100}%` }} />
+              <div className="bg-blue-500" style={{ width: `${prediction.awayWinProb * 100}%` }} />
+            </div>
+          </div>
+
+          {/* xG */}
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <span className="text-xs text-slate-400">xG</span>
+            <span className="text-sm font-bold text-white tabular-nums">
+              {prediction.expectedHomeGoals.toFixed(1)} - {prediction.expectedAwayGoals.toFixed(1)}
+            </span>
+          </div>
+
+          {/* Value bet recommendation */}
+          {hasValue && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-bold text-amber-300">
+                  {MARKET_LABELS[prediction.bestValueMarket!] || prediction.bestValueMarket}
+                </span>
+                <span className="text-sm font-bold text-emerald-400">
+                  EV +{((prediction.bestValueEV ?? 0) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>@ {prediction.bestValueOdds?.toFixed(2)} ({prediction.bestValueBookmaker})</span>
+                {prediction.kellyStake && (
+                  <span>Kelly: {(prediction.kellyStake * 100).toFixed(1)}%</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Odds comparison (collapsed) */}
+          {odds.length > 0 && (
+            <details className="mt-3">
+              <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-300 transition-colors">
+                {odds.length} Buchmacher vergleichen
+              </summary>
+              <div className="mt-2 space-y-1">
+                {odds.slice(0, 5).map((o, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 truncate max-w-[100px]">{o.bookmaker}</span>
+                    <div className="flex gap-3 tabular-nums">
+                      <span className="text-slate-300">{o.homeOdds.toFixed(2)}</span>
+                      <span className="text-slate-300">{o.drawOdds.toFixed(2)}</span>
+                      <span className="text-slate-300">{o.awayOdds.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-2">
+          <span className="text-xs text-slate-500">Analyse wird geladen...</span>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 function TeamBadge({ team, onRemove }: { team: FollowedTeam; onRemove: () => void }) {
   return (
     <motion.div
@@ -199,15 +366,18 @@ export default function SportBotPage() {
   const [liveMatches, setLiveMatches] = useState<Match[]>([])
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([])
   const [recentMatches, setRecentMatches] = useState<Match[]>([])
+  const [valueBets, setValueBets] = useState<ValueBetMatch[]>([])
+  const [modelPerformance, setModelPerformance] = useState<{ avgBrierScore: number | null; matchesScored: number }>({ avgBrierScore: null, matchesScored: 0 })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'recent'>('upcoming')
+  const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'recent' | 'value'>('upcoming')
 
   const fetchData = useCallback(async () => {
     try {
-      const [teamsRes, upcomingRes, recentRes] = await Promise.all([
+      const [teamsRes, upcomingRes, recentRes, valueBetsRes] = await Promise.all([
         fetch('/api/sportbot/teams'),
         fetch('/api/sportbot/matches?filter=upcoming'),
         fetch('/api/sportbot/matches?filter=recent'),
+        fetch('/api/sportbot/value-bets'),
       ])
 
       if (teamsRes.ok) {
@@ -221,6 +391,11 @@ export default function SportBotPage() {
       if (recentRes.ok) {
         const data = await recentRes.json()
         setRecentMatches(data.matches || [])
+      }
+      if (valueBetsRes.ok) {
+        const data = await valueBetsRes.json()
+        setValueBets(data.matches || [])
+        if (data.modelPerformance) setModelPerformance(data.modelPerformance)
       }
     } catch (err) {
       console.error('Failed to fetch sport data:', err)
@@ -254,13 +429,16 @@ export default function SportBotPage() {
     setFollowedTeams(prev => prev.filter(t => t.teamId !== teamId))
   }
 
+  const valueBetCount = valueBets.filter(v => v.prediction?.bestValueMarket && (v.prediction?.bestValueEV ?? 0) > 0).length
+
   const tabs = [
     { id: 'live' as const, label: 'Live', icon: Radio, count: liveMatches.length },
     { id: 'upcoming' as const, label: 'Kommend', icon: Calendar, count: upcomingMatches.length },
     { id: 'recent' as const, label: 'Ergebnisse', icon: Clock, count: recentMatches.length },
+    { id: 'value' as const, label: 'Value Bets', icon: TrendingUp, count: valueBetCount },
   ]
 
-  const currentMatches = activeTab === 'live' ? liveMatches : activeTab === 'upcoming' ? upcomingMatches : recentMatches
+  const currentMatches = activeTab === 'live' ? liveMatches : activeTab === 'upcoming' ? upcomingMatches : activeTab === 'recent' ? recentMatches : []
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
@@ -407,10 +585,39 @@ export default function SportBotPage() {
               ))}
             </div>
 
-            {/* Match List */}
+            {/* Match List / Value Bets */}
             <div className="space-y-3">
               <AnimatePresence mode="wait">
-                {currentMatches.length === 0 ? (
+                {activeTab === 'value' ? (
+                  <motion.div
+                    key="value"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-3"
+                  >
+                    {valueBets.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p className="text-slate-500">Noch keine Analysen verfügbar. Quoten werden alle 2 Stunden aktualisiert.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {valueBets.map((vb, i) => (
+                          <ValueBetCard key={vb.match.externalId || i} data={vb} />
+                        ))}
+                        {modelPerformance.matchesScored > 0 && (
+                          <div className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+                            <p className="text-xs text-slate-500">
+                              Modell-Genauigkeit: <span className="text-slate-300 font-medium">
+                                {((modelPerformance.avgBrierScore ?? 0) * 100).toFixed(1)} Brier Score
+                              </span> ({modelPerformance.matchesScored} Spiele ausgewertet)
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                ) : currentMatches.length === 0 ? (
                   <motion.div
                     key="empty"
                     initial={{ opacity: 0 }}
