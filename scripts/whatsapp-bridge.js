@@ -21,6 +21,11 @@ const prisma = new PrismaClient()
 const PORT = process.env.WA_BRIDGE_PORT || 3001
 const QR_TIMEOUT_MS = 120000 // 2 minutes — destroy session if QR not scanned
 
+// Keep DB connection warm — Neon cold starts can add 1-2s to first query
+setInterval(async () => {
+  try { await prisma.$queryRaw`SELECT 1` } catch {}
+}, 30000)
+
 // Prevent unhandled errors from crashing the process
 // whatsapp-web.js throws "Execution context was destroyed" during auth navigation
 process.on('uncaughtException', err => {
@@ -147,6 +152,9 @@ async function startSession(name) {
     }
   })
 
+  // Cache userId for fast message handling (avoids DB lookup on every message)
+  let cachedUserId = null
+
   // Handle incoming messages — reply with match results
   client.on('message', async msg => {
     // Only respond to messages from the connected user (to themselves)
@@ -157,23 +165,37 @@ async function startSession(name) {
     const text = (msg.body || '').trim().toLowerCase()
     if (!text) return
 
+    // Check if it's a known command before doing any DB work
+    const commands = ['ergebnisse', 'results', 'spiele', 'scores', 'live', 'next', 'nächste', 'kommende', 'wetten', 'value', 'bets', 'tipps', 'hilfe', 'help', '?']
+    if (!commands.includes(text)) return
+
     console.log(`💬 [${name}] Message received: "${text}"`)
 
+    // Send typing indicator immediately for perceived speed
     try {
-      // Find the user by their WhatsApp session
-      const waSession = await prisma.whatsAppSession.findFirst({
-        where: { sessionName: name },
-      })
-      if (!waSession) return
+      const chat = await msg.getChat()
+      await chat.sendStateTyping()
+    } catch {}
+
+    try {
+      // Use cached userId or look up once
+      if (!cachedUserId) {
+        const waSession = await prisma.whatsAppSession.findFirst({
+          where: { sessionName: name },
+        })
+        if (!waSession) return
+        cachedUserId = waSession.userId
+      }
+      const userId = cachedUserId
 
       if (text === 'ergebnisse' || text === 'results' || text === 'spiele' || text === 'scores') {
-        await handleResultsCommand(client, msg, waSession.userId)
+        await handleResultsCommand(client, msg, userId)
       } else if (text === 'live') {
-        await handleLiveCommand(client, msg, waSession.userId)
+        await handleLiveCommand(client, msg, userId)
       } else if (text === 'next' || text === 'nächste' || text === 'kommende') {
-        await handleUpcomingCommand(client, msg, waSession.userId)
+        await handleUpcomingCommand(client, msg, userId)
       } else if (text === 'wetten' || text === 'value' || text === 'bets' || text === 'tipps') {
-        await handleValueBetsCommand(client, msg, waSession.userId)
+        await handleValueBetsCommand(client, msg, userId)
       } else if (text === 'hilfe' || text === 'help' || text === '?') {
         await msg.reply(
           '⚽ *Sport-Bot Befehle*\n\n' +
@@ -514,6 +536,26 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`📱 WhatsApp Bridge listening on port ${PORT}`)
+
+  // Auto-restore sessions from DB on startup (any session with a phone number has been connected before)
+  try {
+    const savedSessions = await prisma.whatsAppSession.findMany({
+      where: { phoneNumber: { not: null } },
+    })
+    for (const wa of savedSessions) {
+      console.log(`🔄 Auto-restoring session: ${wa.sessionName}`)
+      try {
+        await startSession(wa.sessionName)
+      } catch (err) {
+        console.error(`⚠️ Failed to restore ${wa.sessionName}:`, err.message)
+      }
+    }
+    if (savedSessions.length > 0) {
+      console.log(`🔄 Restored ${savedSessions.length} session(s)`)
+    }
+  } catch (err) {
+    console.error('⚠️ Session restore failed:', err.message)
+  }
 })
