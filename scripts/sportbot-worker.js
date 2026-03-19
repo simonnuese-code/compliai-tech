@@ -610,143 +610,175 @@ async function fetchOddsForCompetition(competitionCode) {
 
 // ===== TEAM STATS & PREDICTIONS =====
 
+// Leagues to fetch full season data for (football-data.org free tier supports these)
+const SUPPORTED_LEAGUES = ['BL1', 'PL', 'PD', 'SA', 'FL1', 'ELC', 'DED', 'PPL']
+
 async function updateTeamStats() {
-  console.log('📊 Updating team stats...')
-
-  // Get all finished matches from DB
+  console.log('📊 Updating team stats from full season data...')
   const currentYear = new Date().getFullYear()
-  const seasonStart = new Date(`${currentYear - 1}-08-01`)
+  // Season year: if before August, use previous year as season start
+  const month = new Date().getMonth()
+  const season = month < 7 ? currentYear - 1 : currentYear
 
-  const finishedMatches = await prisma.sportMatch.findMany({
-    where: {
-      status: 'FINISHED',
-      utcDate: { gte: seasonStart },
-      homeScoreFullTime: { not: null },
-      awayScoreFullTime: { not: null },
-    },
-    orderBy: { utcDate: 'asc' },
-  })
+  for (const compCode of SUPPORTED_LEAGUES) {
+    try {
+      // 1. Fetch full season matches for ALL teams in this league (not just followed)
+      const matchData = await footballApi(`/competitions/${compCode}/matches?season=${season}&status=FINISHED`)
+      if (!matchData || !matchData.matches || matchData.matches.length === 0) {
+        console.log(`📊 [${compCode}] No season data available`)
+        continue
+      }
 
-  if (finishedMatches.length === 0) return
+      const allMatches = matchData.matches
+      console.log(`📊 [${compCode}] Processing ${allMatches.length} season matches`)
 
-  // Group by competition
-  const byComp = {}
-  for (const m of finishedMatches) {
-    if (!byComp[m.competitionCode]) byComp[m.competitionCode] = []
-    byComp[m.competitionCode].push(m)
-  }
+      // 2. Calculate league-wide averages
+      let totalHomeGoals = 0, totalAwayGoals = 0, totalGames = 0
+      for (const m of allMatches) {
+        const hg = m.score?.fullTime?.home
+        const ag = m.score?.fullTime?.away
+        if (hg === null || hg === undefined || ag === null || ag === undefined) continue
+        totalHomeGoals += hg
+        totalAwayGoals += ag
+        totalGames++
+      }
+      if (totalGames === 0) continue
 
-  for (const [compCode, matches] of Object.entries(byComp)) {
-    // Calculate league averages
-    let totalHomeGoals = 0, totalAwayGoals = 0, totalMatches = 0
-    for (const m of matches) {
-      totalHomeGoals += m.homeScoreFullTime
-      totalAwayGoals += m.awayScoreFullTime
-      totalMatches++
-    }
-    const avgHomeGoals = totalMatches > 0 ? totalHomeGoals / totalMatches : 1.55
-    const avgAwayGoals = totalMatches > 0 ? totalAwayGoals / totalMatches : 1.25
+      const leagueAvgHomeGoals = totalHomeGoals / totalGames
+      const leagueAvgAwayGoals = totalAwayGoals / totalGames
+      console.log(`📊 [${compCode}] League avg: ${leagueAvgHomeGoals.toFixed(2)} home, ${leagueAvgAwayGoals.toFixed(2)} away (${totalGames} games)`)
 
-    // Calculate per-team stats
-    const teamData = {}
-    for (const m of matches) {
-      for (const [teamId, isHome] of [[m.homeTeamId, true], [m.awayTeamId, false]]) {
-        if (!teamData[teamId]) {
-          teamData[teamId] = {
-            teamName: isHome ? m.homeTeamName : m.awayTeamName,
+      // 3. Build per-team statistics with full home/away split
+      const teamData = {}
+      for (const m of allMatches) {
+        const hg = m.score?.fullTime?.home
+        const ag = m.score?.fullTime?.away
+        if (hg === null || hg === undefined || ag === null || ag === undefined) continue
+
+        const homeId = m.homeTeam.id
+        const awayId = m.awayTeam.id
+
+        // Initialize teams
+        if (!teamData[homeId]) {
+          teamData[homeId] = {
+            teamName: m.homeTeam.name,
             goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
             homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
             awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
             recentMatches: [],
           }
         }
-        const t = teamData[teamId]
-        const scored = isHome ? m.homeScoreFullTime : m.awayScoreFullTime
-        const conceded = isHome ? m.awayScoreFullTime : m.homeScoreFullTime
-        t.goalsScored += scored
-        t.goalsConceded += conceded
-        t.matchesPlayed++
-        if (isHome) {
-          t.homeGoalsScored += scored
-          t.homeGoalsConceded += conceded
-          t.homeMatches++
-        } else {
-          t.awayGoalsScored += scored
-          t.awayGoalsConceded += conceded
-          t.awayMatches++
+        if (!teamData[awayId]) {
+          teamData[awayId] = {
+            teamName: m.awayTeam.name,
+            goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
+            homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
+            awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
+            recentMatches: [],
+          }
         }
-        t.recentMatches.push({ scored, conceded, date: m.utcDate })
+
+        // Home team stats
+        const ht = teamData[homeId]
+        ht.goalsScored += hg
+        ht.goalsConceded += ag
+        ht.matchesPlayed++
+        ht.homeGoalsScored += hg
+        ht.homeGoalsConceded += ag
+        ht.homeMatches++
+        ht.recentMatches.push({ scored: hg, conceded: ag, date: m.utcDate, isHome: true })
+
+        // Away team stats
+        const at = teamData[awayId]
+        at.goalsScored += ag
+        at.goalsConceded += hg
+        at.matchesPlayed++
+        at.awayGoalsScored += ag
+        at.awayGoalsConceded += hg
+        at.awayMatches++
+        at.recentMatches.push({ scored: ag, conceded: hg, date: m.utcDate, isHome: false })
       }
-    }
 
-    // Upsert stats to DB
-    const season = currentYear
-    for (const [teamIdStr, data] of Object.entries(teamData)) {
-      const teamId = parseInt(teamIdStr)
-      const attack = data.matchesPlayed > 0 && avgHomeGoals > 0
-        ? (data.goalsScored / data.matchesPlayed) / ((avgHomeGoals + avgAwayGoals) / 2) : 1.0
-      const defense = data.matchesPlayed > 0 && avgAwayGoals > 0
-        ? (data.goalsConceded / data.matchesPlayed) / ((avgHomeGoals + avgAwayGoals) / 2) : 1.0
+      // 4. Calculate attack/defense strengths with proper home/away split
+      for (const [teamIdStr, data] of Object.entries(teamData)) {
+        const teamId = parseInt(teamIdStr)
 
-      // Form: last 5 matches, weighted (most recent = highest weight)
-      const recent = data.recentMatches.slice(-5)
-      let formAttack = attack, formDefense = defense
-      if (recent.length >= 3) {
-        let wScored = 0, wConceded = 0, wSum = 0
-        recent.forEach((m, i) => {
-          const w = i + 1 // Linear weight: 1,2,3,4,5
-          wScored += m.scored * w
-          wConceded += m.conceded * w
-          wSum += w
+        // Overall attack/defense strength (relative to league average)
+        const teamAvgScored = data.goalsScored / data.matchesPlayed
+        const teamAvgConceded = data.goalsConceded / data.matchesPlayed
+        const leagueOverallAvg = (leagueAvgHomeGoals + leagueAvgAwayGoals) / 2
+
+        const attackStrength = leagueOverallAvg > 0 ? teamAvgScored / leagueOverallAvg : 1.0
+        const defenseStrength = leagueOverallAvg > 0 ? teamAvgConceded / leagueOverallAvg : 1.0
+
+        // Form: last 5 matches, exponentially weighted (most recent = highest weight)
+        const recent = data.recentMatches
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .slice(-5)
+
+        let formAttack = attackStrength
+        let formDefense = defenseStrength
+        if (recent.length >= 3) {
+          let wScored = 0, wConceded = 0, wSum = 0
+          recent.forEach((m, i) => {
+            const w = Math.pow(1.5, i) // Exponential weight: 1, 1.5, 2.25, 3.375, 5.06
+            wScored += m.scored * w
+            wConceded += m.conceded * w
+            wSum += w
+          })
+          formAttack = leagueOverallAvg > 0 ? (wScored / wSum) / leagueOverallAvg : 1.0
+          formDefense = leagueOverallAvg > 0 ? (wConceded / wSum) / leagueOverallAvg : 1.0
+        }
+
+        await prisma.teamStats.upsert({
+          where: {
+            teamId_competitionCode_season: { teamId, competitionCode: compCode, season },
+          },
+          update: {
+            teamName: data.teamName,
+            attackStrength: parseFloat(attackStrength.toFixed(4)),
+            defenseStrength: parseFloat(defenseStrength.toFixed(4)),
+            matchesPlayed: data.matchesPlayed,
+            goalsScored: data.goalsScored,
+            goalsConceded: data.goalsConceded,
+            homeGoalsScored: data.homeGoalsScored,
+            homeGoalsConceded: data.homeGoalsConceded,
+            awayGoalsScored: data.awayGoalsScored,
+            awayGoalsConceded: data.awayGoalsConceded,
+            homeMatchesPlayed: data.homeMatches,
+            awayMatchesPlayed: data.awayMatches,
+            formAttack: parseFloat(formAttack.toFixed(4)),
+            formDefense: parseFloat(formDefense.toFixed(4)),
+          },
+          create: {
+            teamId,
+            teamName: data.teamName,
+            competitionCode: compCode,
+            season,
+            attackStrength: parseFloat(attackStrength.toFixed(4)),
+            defenseStrength: parseFloat(defenseStrength.toFixed(4)),
+            matchesPlayed: data.matchesPlayed,
+            goalsScored: data.goalsScored,
+            goalsConceded: data.goalsConceded,
+            homeGoalsScored: data.homeGoalsScored,
+            homeGoalsConceded: data.homeGoalsConceded,
+            awayGoalsScored: data.awayGoalsScored,
+            awayGoalsConceded: data.awayGoalsConceded,
+            homeMatchesPlayed: data.homeMatches,
+            awayMatchesPlayed: data.awayMatches,
+            formAttack: parseFloat(formAttack.toFixed(4)),
+            formDefense: parseFloat(formDefense.toFixed(4)),
+          },
         })
-        const avgOverall = (avgHomeGoals + avgAwayGoals) / 2
-        formAttack = avgOverall > 0 ? (wScored / wSum) / avgOverall : 1.0
-        formDefense = avgOverall > 0 ? (wConceded / wSum) / avgOverall : 1.0
       }
 
-      await prisma.teamStats.upsert({
-        where: {
-          teamId_competitionCode_season: { teamId, competitionCode: compCode, season },
-        },
-        update: {
-          teamName: data.teamName,
-          attackStrength: parseFloat(attack.toFixed(4)),
-          defenseStrength: parseFloat(defense.toFixed(4)),
-          matchesPlayed: data.matchesPlayed,
-          goalsScored: data.goalsScored,
-          goalsConceded: data.goalsConceded,
-          homeGoalsScored: data.homeGoalsScored,
-          homeGoalsConceded: data.homeGoalsConceded,
-          awayGoalsScored: data.awayGoalsScored,
-          awayGoalsConceded: data.awayGoalsConceded,
-          homeMatchesPlayed: data.homeMatches,
-          awayMatchesPlayed: data.awayMatches,
-          formAttack: parseFloat(formAttack.toFixed(4)),
-          formDefense: parseFloat(formDefense.toFixed(4)),
-        },
-        create: {
-          teamId,
-          teamName: data.teamName,
-          competitionCode: compCode,
-          season,
-          attackStrength: parseFloat(attack.toFixed(4)),
-          defenseStrength: parseFloat(defense.toFixed(4)),
-          matchesPlayed: data.matchesPlayed,
-          goalsScored: data.goalsScored,
-          goalsConceded: data.goalsConceded,
-          homeGoalsScored: data.homeGoalsScored,
-          homeGoalsConceded: data.homeGoalsConceded,
-          awayGoalsScored: data.awayGoalsScored,
-          awayGoalsConceded: data.awayGoalsConceded,
-          homeMatchesPlayed: data.homeMatches,
-          awayMatchesPlayed: data.awayMatches,
-          formAttack: parseFloat(formAttack.toFixed(4)),
-          formDefense: parseFloat(formDefense.toFixed(4)),
-        },
-      })
-    }
+      console.log(`📊 [${compCode}] Updated stats for ${Object.keys(teamData).length} teams (${totalGames} matches)`)
 
-    console.log(`📊 Updated stats for ${Object.keys(teamData).length} teams in ${compCode}`)
+      // Rate limit: wait between league fetches (free tier = 10 req/min)
+      await sleep(7000)
+    } catch (err) {
+      console.error(`📊 [${compCode}] Error:`, err.message)
+    }
   }
 }
 
@@ -859,22 +891,35 @@ async function syncOddsAndPredict() {
         })
       }
 
-      // Generate prediction
+      // Generate prediction using full season stats
+      // Try current season first, then previous season as fallback
       const homeStats = await prisma.teamStats.findFirst({
-        where: { teamId: match.homeTeamId, competitionCode: compCode, season: currentYear },
+        where: { teamId: match.homeTeamId, competitionCode: compCode },
+        orderBy: { season: 'desc' },
       })
       const awayStats = await prisma.teamStats.findFirst({
-        where: { teamId: match.awayTeamId, competitionCode: compCode, season: currentYear },
+        where: { teamId: match.awayTeamId, competitionCode: compCode },
+        orderBy: { season: 'desc' },
       })
 
-      // Default to league average (1.0) if team has no stats yet
-      const hs = homeStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0 }
-      const as_ = awayStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0 }
+      // Skip if both teams have no stats (prediction would be meaningless)
+      if (!homeStats && !awayStats) continue
 
-      const homeAtk = hs.attackStrength * (1 - FORM_WEIGHT) + hs.formAttack * FORM_WEIGHT
-      const homeDef = hs.defenseStrength * (1 - FORM_WEIGHT) + hs.formDefense * FORM_WEIGHT
-      const awayAtk = as_.attackStrength * (1 - FORM_WEIGHT) + as_.formAttack * FORM_WEIGHT
-      const awayDef = as_.defenseStrength * (1 - FORM_WEIGHT) + as_.formDefense * FORM_WEIGHT
+      // Use real stats or conservative default (1.0 = league average)
+      const hs = homeStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0, matchesPlayed: 0 }
+      const as_ = awayStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0, matchesPlayed: 0 }
+
+      // Calculate confidence based on data quality (0-1)
+      const homeConf = Math.min(1, (hs.matchesPlayed || 0) / 15) // Full confidence at 15+ matches
+      const awayConf = Math.min(1, (as_.matchesPlayed || 0) / 15)
+      const confidence = (homeConf + awayConf) / 2
+
+      // Blend strength with form (30% form weight, but reduce if few matches)
+      const effectiveFormWeight = FORM_WEIGHT * confidence
+      const homeAtk = hs.attackStrength * (1 - effectiveFormWeight) + hs.formAttack * effectiveFormWeight
+      const homeDef = hs.defenseStrength * (1 - effectiveFormWeight) + hs.formDefense * effectiveFormWeight
+      const awayAtk = as_.attackStrength * (1 - effectiveFormWeight) + as_.formAttack * effectiveFormWeight
+      const awayDef = as_.defenseStrength * (1 - effectiveFormWeight) + as_.formDefense * effectiveFormWeight
 
       const pred = predictMatch(homeAtk, homeDef, awayAtk, awayDef)
 
@@ -882,6 +927,9 @@ async function syncOddsAndPredict() {
       const matchOdds = await prisma.matchOdds.findMany({
         where: { matchExternalId: match.externalId },
       })
+
+      // Only look for value bets if confidence is high enough (>50%)
+      const minEVThreshold = confidence >= 0.7 ? 0.05 : confidence >= 0.5 ? 0.10 : 999
 
       let bestMarket = null, bestEV = -1, bestOdds = 0, bestBookmaker = null, bestKelly = 0
       for (const odds of matchOdds) {
@@ -905,6 +953,8 @@ async function syncOddsAndPredict() {
         }
       }
 
+      const hasValue = bestEV >= minEVThreshold
+
       await prisma.matchPrediction.upsert({
         where: { matchExternalId: match.externalId },
         update: {
@@ -915,11 +965,12 @@ async function syncOddsAndPredict() {
           underProb: pred.under25,
           expectedHomeGoals: pred.homeXG,
           expectedAwayGoals: pred.awayXG,
-          bestValueMarket: bestEV >= 0.05 ? bestMarket : null,
-          bestValueEV: bestEV >= 0.05 ? bestEV : null,
-          bestValueOdds: bestEV >= 0.05 ? bestOdds : null,
-          bestValueBookmaker: bestEV >= 0.05 ? bestBookmaker : null,
-          kellyStake: bestEV >= 0.05 ? bestKelly : null,
+          bestValueMarket: hasValue ? bestMarket : null,
+          bestValueEV: hasValue ? bestEV : null,
+          bestValueOdds: hasValue ? bestOdds : null,
+          bestValueBookmaker: hasValue ? bestBookmaker : null,
+          kellyStake: hasValue ? bestKelly : null,
+          confidence,
         },
         create: {
           matchExternalId: match.externalId,
@@ -930,11 +981,12 @@ async function syncOddsAndPredict() {
           underProb: pred.under25,
           expectedHomeGoals: pred.homeXG,
           expectedAwayGoals: pred.awayXG,
-          bestValueMarket: bestEV >= 0.05 ? bestMarket : null,
-          bestValueEV: bestEV >= 0.05 ? bestEV : null,
-          bestValueOdds: bestEV >= 0.05 ? bestOdds : null,
-          bestValueBookmaker: bestEV >= 0.05 ? bestBookmaker : null,
-          kellyStake: bestEV >= 0.05 ? bestKelly : null,
+          bestValueMarket: hasValue ? bestMarket : null,
+          bestValueEV: hasValue ? bestEV : null,
+          bestValueOdds: hasValue ? bestOdds : null,
+          bestValueBookmaker: hasValue ? bestBookmaker : null,
+          kellyStake: hasValue ? bestKelly : null,
+          confidence,
         },
       })
     }

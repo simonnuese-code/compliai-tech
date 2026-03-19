@@ -276,13 +276,42 @@ function ValueBetCard({ data }: { data: ValueBetMatch }) {
             </div>
           </div>
 
-          {/* xG */}
-          <div className="flex items-center justify-center gap-4 mb-3">
-            <span className="text-xs text-slate-400">xG</span>
-            <span className="text-sm font-bold text-white tabular-nums">
-              {prediction.expectedHomeGoals.toFixed(1)} - {prediction.expectedAwayGoals.toFixed(1)}
-            </span>
+          {/* xG + Confidence */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">xG</span>
+              <span className="text-sm font-bold text-white tabular-nums">
+                {prediction.expectedHomeGoals.toFixed(1)} - {prediction.expectedAwayGoals.toFixed(1)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-500">Konfidenz</span>
+              <div className="flex gap-0.5">
+                {[0.2, 0.4, 0.6, 0.8, 1.0].map((threshold) => (
+                  <div
+                    key={threshold}
+                    className={`h-2 w-2 rounded-full ${
+                      prediction.confidence >= threshold
+                        ? prediction.confidence >= 0.7 ? 'bg-emerald-500' : prediction.confidence >= 0.4 ? 'bg-amber-500' : 'bg-red-500'
+                        : 'bg-white/10'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className={`text-xs font-medium ${
+                prediction.confidence >= 0.7 ? 'text-emerald-400' : prediction.confidence >= 0.4 ? 'text-amber-400' : 'text-red-400'
+              }`}>
+                {(prediction.confidence * 100).toFixed(0)}%
+              </span>
+            </div>
           </div>
+
+          {/* Low confidence warning */}
+          {prediction.confidence < 0.5 && (
+            <div className="mb-3 p-2 rounded-lg bg-amber-500/5 border border-amber-500/10 text-center">
+              <span className="text-xs text-amber-400/70">Wenig Saisondaten — Vorhersage unsicher</span>
+            </div>
+          )}
 
           {/* Value bet recommendation */}
           {hasValue && (
