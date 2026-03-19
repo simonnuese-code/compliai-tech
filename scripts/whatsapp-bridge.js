@@ -130,11 +130,13 @@ async function startSession(name) {
           '📢 Vor Spielbeginn\n' +
           '⚽ Tore in Echtzeit\n' +
           '⏸️ Halbzeit & Abpfiff\n' +
-          '🟥 Rote Karten\n\n' +
+          '🟥 Rote Karten\n' +
+          '💰 Value Bet Alerts\n\n' +
           '*Schreib mir jederzeit:*\n' +
           '📊 *ergebnisse* — Letzte 7 Tage\n' +
           '🔴 *live* — Aktuelle Spiele\n' +
           '📅 *nächste* — Kommende Spiele\n' +
+          '💰 *wetten* — Value Bets & Quoten\n' +
           '❓ *hilfe* — Alle Befehle\n\n' +
           'Teams verwalten: compliai.tech/hub/sportbot'
         )
@@ -170,12 +172,15 @@ async function startSession(name) {
         await handleLiveCommand(client, msg, waSession.userId)
       } else if (text === 'next' || text === 'nächste' || text === 'kommende') {
         await handleUpcomingCommand(client, msg, waSession.userId)
+      } else if (text === 'wetten' || text === 'value' || text === 'bets' || text === 'tipps') {
+        await handleValueBetsCommand(client, msg, waSession.userId)
       } else if (text === 'hilfe' || text === 'help' || text === '?') {
         await msg.reply(
           '⚽ *Sport-Bot Befehle*\n\n' +
           '📊 *ergebnisse* — Ergebnisse der letzten 7 Tage\n' +
           '🔴 *live* — Aktuelle Live-Spiele\n' +
           '📅 *nächste* — Kommende Spiele\n' +
+          '💰 *wetten* — Value Bets & Quoten\n' +
           '❓ *hilfe* — Diese Hilfe anzeigen'
         )
       }
@@ -331,6 +336,81 @@ async function handleUpcomingCommand(client, msg, userId) {
     const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })
     reply += `\n${date} ${time}: ${m.homeTeamName} vs ${m.awayTeamName}`
     if (m.competitionName) reply += ` _(${m.competitionName})_`
+  }
+
+  await msg.reply(reply)
+}
+
+async function handleValueBetsCommand(client, msg, userId) {
+  const followedTeams = await prisma.followedTeam.findMany({
+    where: { userId },
+    select: { teamId: true },
+  })
+
+  if (followedTeams.length === 0) {
+    await msg.reply('Du folgst noch keinen Teams. Füge Teams auf compliai.tech/hub/sportbot/teams hinzu.')
+    return
+  }
+
+  const teamIds = followedTeams.map(t => t.teamId)
+
+  // Get upcoming matches with predictions
+  const matches = await prisma.sportMatch.findMany({
+    where: {
+      status: { in: ['SCHEDULED', 'TIMED'] },
+      utcDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+      OR: [
+        { homeTeamId: { in: teamIds } },
+        { awayTeamId: { in: teamIds } },
+      ],
+    },
+    orderBy: { utcDate: 'asc' },
+    take: 10,
+  })
+
+  if (matches.length === 0) {
+    await msg.reply('💰 Keine kommenden Spiele mit Quoten für deine Teams.')
+    return
+  }
+
+  const marketNames = { home: '1', draw: 'X', away: '2', over25: 'Ü2.5', under25: 'U2.5' }
+  let reply = '💰 *Value Bets — Deine Teams*\n'
+
+  for (const m of matches) {
+    const pred = await prisma.matchPrediction.findUnique({
+      where: { matchExternalId: m.externalId },
+    })
+
+    const d = new Date(m.utcDate)
+    const date = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
+    const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })
+    const home = m.homeTeamName.length > 12 ? m.homeTeamName.slice(0, 12) : m.homeTeamName
+    const away = m.awayTeamName.length > 12 ? m.awayTeamName.slice(0, 12) : m.awayTeamName
+
+    reply += `\n${date} ${time}\n${home} vs ${away}`
+
+    if (pred) {
+      reply += `\n📊 ${(pred.homeWinProb * 100).toFixed(0)}% / ${(pred.drawProb * 100).toFixed(0)}% / ${(pred.awayWinProb * 100).toFixed(0)}%`
+      reply += ` | xG ${pred.expectedHomeGoals.toFixed(1)}-${pred.expectedAwayGoals.toFixed(1)}`
+
+      if (pred.bestValueMarket && pred.bestValueEV > 0) {
+        reply += `\n✅ *${marketNames[pred.bestValueMarket] || pred.bestValueMarket}* @ ${pred.bestValueOdds?.toFixed(2)} (${pred.bestValueBookmaker}) EV +${(pred.bestValueEV * 100).toFixed(1)}%`
+      } else {
+        reply += `\n⚪ Kein Value Bet`
+      }
+    } else {
+      reply += `\n⏳ Noch keine Analyse`
+    }
+  }
+
+  // Add model performance
+  const scoredPreds = await prisma.matchPrediction.aggregate({
+    where: { brierScore: { not: null } },
+    _avg: { brierScore: true },
+    _count: true,
+  })
+  if (scoredPreds._count > 0) {
+    reply += `\n\n📈 Modell-Genauigkeit: ${(scoredPreds._avg.brierScore * 100).toFixed(1)} Brier (${scoredPreds._count} Spiele)`
   }
 
   await msg.reply(reply)
