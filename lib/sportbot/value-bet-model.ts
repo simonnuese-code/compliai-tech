@@ -30,6 +30,10 @@ export function poissonPmf(lambda: number, k: number): number {
 export interface TeamStrength {
   attackStrength: number  // relative to league avg (1.0 = average)
   defenseStrength: number // relative to league avg (1.0 = average)
+  homeAttackStrength: number  // home goals scored / league avg home goals
+  homeDefenseStrength: number // home goals conceded / league avg away goals
+  awayAttackStrength: number  // away goals scored / league avg away goals
+  awayDefenseStrength: number // away goals conceded / league avg home goals
   formAttack: number      // recent form factor
   formDefense: number     // recent form factor
 }

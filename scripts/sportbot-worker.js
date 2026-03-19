@@ -704,12 +704,35 @@ async function updateTeamStats() {
         const teamId = parseInt(teamIdStr)
 
         // Overall attack/defense strength (relative to league average)
+        const leagueOverallAvg = (leagueAvgHomeGoals + leagueAvgAwayGoals) / 2
         const teamAvgScored = data.goalsScored / data.matchesPlayed
         const teamAvgConceded = data.goalsConceded / data.matchesPlayed
-        const leagueOverallAvg = (leagueAvgHomeGoals + leagueAvgAwayGoals) / 2
-
         const attackStrength = leagueOverallAvg > 0 ? teamAvgScored / leagueOverallAvg : 1.0
         const defenseStrength = leagueOverallAvg > 0 ? teamAvgConceded / leagueOverallAvg : 1.0
+
+        // HOME-SPECIFIC strengths (this is the key for accurate predictions)
+        // homeAttack = (home goals scored per home game) / league avg home goals
+        // homeDefense = (home goals conceded per home game) / league avg away goals
+        let homeAttackStrength = 1.0, homeDefenseStrength = 1.0
+        if (data.homeMatches >= 3 && leagueAvgHomeGoals > 0 && leagueAvgAwayGoals > 0) {
+          homeAttackStrength = (data.homeGoalsScored / data.homeMatches) / leagueAvgHomeGoals
+          homeDefenseStrength = (data.homeGoalsConceded / data.homeMatches) / leagueAvgAwayGoals
+        } else {
+          homeAttackStrength = attackStrength
+          homeDefenseStrength = defenseStrength
+        }
+
+        // AWAY-SPECIFIC strengths
+        // awayAttack = (away goals scored per away game) / league avg away goals
+        // awayDefense = (away goals conceded per away game) / league avg home goals
+        let awayAttackStrength = 1.0, awayDefenseStrength = 1.0
+        if (data.awayMatches >= 3 && leagueAvgHomeGoals > 0 && leagueAvgAwayGoals > 0) {
+          awayAttackStrength = (data.awayGoalsScored / data.awayMatches) / leagueAvgAwayGoals
+          awayDefenseStrength = (data.awayGoalsConceded / data.awayMatches) / leagueAvgHomeGoals
+        } else {
+          awayAttackStrength = attackStrength
+          awayDefenseStrength = defenseStrength
+        }
 
         // Form: last 5 matches, exponentially weighted (most recent = highest weight)
         const recent = data.recentMatches
@@ -730,45 +753,35 @@ async function updateTeamStats() {
           formDefense = leagueOverallAvg > 0 ? (wConceded / wSum) / leagueOverallAvg : 1.0
         }
 
+        const statsData = {
+          teamName: data.teamName,
+          attackStrength: parseFloat(attackStrength.toFixed(4)),
+          defenseStrength: parseFloat(defenseStrength.toFixed(4)),
+          homeAttackStrength: parseFloat(homeAttackStrength.toFixed(4)),
+          homeDefenseStrength: parseFloat(homeDefenseStrength.toFixed(4)),
+          awayAttackStrength: parseFloat(awayAttackStrength.toFixed(4)),
+          awayDefenseStrength: parseFloat(awayDefenseStrength.toFixed(4)),
+          leagueAvgHomeGoals: parseFloat(leagueAvgHomeGoals.toFixed(4)),
+          leagueAvgAwayGoals: parseFloat(leagueAvgAwayGoals.toFixed(4)),
+          matchesPlayed: data.matchesPlayed,
+          goalsScored: data.goalsScored,
+          goalsConceded: data.goalsConceded,
+          homeGoalsScored: data.homeGoalsScored,
+          homeGoalsConceded: data.homeGoalsConceded,
+          awayGoalsScored: data.awayGoalsScored,
+          awayGoalsConceded: data.awayGoalsConceded,
+          homeMatchesPlayed: data.homeMatches,
+          awayMatchesPlayed: data.awayMatches,
+          formAttack: parseFloat(formAttack.toFixed(4)),
+          formDefense: parseFloat(formDefense.toFixed(4)),
+        }
+
         await prisma.teamStats.upsert({
           where: {
             teamId_competitionCode_season: { teamId, competitionCode: compCode, season },
           },
-          update: {
-            teamName: data.teamName,
-            attackStrength: parseFloat(attackStrength.toFixed(4)),
-            defenseStrength: parseFloat(defenseStrength.toFixed(4)),
-            matchesPlayed: data.matchesPlayed,
-            goalsScored: data.goalsScored,
-            goalsConceded: data.goalsConceded,
-            homeGoalsScored: data.homeGoalsScored,
-            homeGoalsConceded: data.homeGoalsConceded,
-            awayGoalsScored: data.awayGoalsScored,
-            awayGoalsConceded: data.awayGoalsConceded,
-            homeMatchesPlayed: data.homeMatches,
-            awayMatchesPlayed: data.awayMatches,
-            formAttack: parseFloat(formAttack.toFixed(4)),
-            formDefense: parseFloat(formDefense.toFixed(4)),
-          },
-          create: {
-            teamId,
-            teamName: data.teamName,
-            competitionCode: compCode,
-            season,
-            attackStrength: parseFloat(attackStrength.toFixed(4)),
-            defenseStrength: parseFloat(defenseStrength.toFixed(4)),
-            matchesPlayed: data.matchesPlayed,
-            goalsScored: data.goalsScored,
-            goalsConceded: data.goalsConceded,
-            homeGoalsScored: data.homeGoalsScored,
-            homeGoalsConceded: data.homeGoalsConceded,
-            awayGoalsScored: data.awayGoalsScored,
-            awayGoalsConceded: data.awayGoalsConceded,
-            homeMatchesPlayed: data.homeMatches,
-            awayMatchesPlayed: data.awayMatches,
-            formAttack: parseFloat(formAttack.toFixed(4)),
-            formDefense: parseFloat(formDefense.toFixed(4)),
-          },
+          update: statsData,
+          create: { teamId, competitionCode: compCode, season, ...statsData },
         })
       }
 
@@ -906,22 +919,37 @@ async function syncOddsAndPredict() {
       if (!homeStats && !awayStats) continue
 
       // Use real stats or conservative default (1.0 = league average)
-      const hs = homeStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0, matchesPlayed: 0 }
-      const as_ = awayStats || { attackStrength: 1.0, defenseStrength: 1.0, formAttack: 1.0, formDefense: 1.0, matchesPlayed: 0 }
+      const defaultStats = {
+        attackStrength: 1.0, defenseStrength: 1.0,
+        homeAttackStrength: 1.0, homeDefenseStrength: 1.0,
+        awayAttackStrength: 1.0, awayDefenseStrength: 1.0,
+        formAttack: 1.0, formDefense: 1.0,
+        matchesPlayed: 0, homeMatchesPlayed: 0, awayMatchesPlayed: 0,
+        leagueAvgHomeGoals: 1.5, leagueAvgAwayGoals: 1.2,
+      }
+      const hs = homeStats || defaultStats
+      const as_ = awayStats || defaultStats
 
       // Calculate confidence based on data quality (0-1)
       const homeConf = Math.min(1, (hs.matchesPlayed || 0) / 15) // Full confidence at 15+ matches
       const awayConf = Math.min(1, (as_.matchesPlayed || 0) / 15)
       const confidence = (homeConf + awayConf) / 2
 
-      // Blend strength with form (30% form weight, but reduce if few matches)
+      // Use HOME-SPECIFIC attack for home team, AWAY-SPECIFIC for away team
+      // This is the key improvement: Bayern at home attacks much stronger than overall
+      // homeXG = homeTeam_HOME_attack × awayTeam_AWAY_defense × leagueAvgHomeGoals
+      // awayXG = awayTeam_AWAY_attack × homeTeam_HOME_defense × leagueAvgAwayGoals
       const effectiveFormWeight = FORM_WEIGHT * confidence
-      const homeAtk = hs.attackStrength * (1 - effectiveFormWeight) + hs.formAttack * effectiveFormWeight
-      const homeDef = hs.defenseStrength * (1 - effectiveFormWeight) + hs.formDefense * effectiveFormWeight
-      const awayAtk = as_.attackStrength * (1 - effectiveFormWeight) + as_.formAttack * effectiveFormWeight
-      const awayDef = as_.defenseStrength * (1 - effectiveFormWeight) + as_.formDefense * effectiveFormWeight
+      const homeAtk = (hs.homeAttackStrength || hs.attackStrength) * (1 - effectiveFormWeight) + hs.formAttack * effectiveFormWeight
+      const homeDef = (hs.homeDefenseStrength || hs.defenseStrength) * (1 - effectiveFormWeight) + hs.formDefense * effectiveFormWeight
+      const awayAtk = (as_.awayAttackStrength || as_.attackStrength) * (1 - effectiveFormWeight) + as_.formAttack * effectiveFormWeight
+      const awayDef = (as_.awayDefenseStrength || as_.defenseStrength) * (1 - effectiveFormWeight) + as_.formDefense * effectiveFormWeight
 
-      const pred = predictMatch(homeAtk, homeDef, awayAtk, awayDef)
+      // Use actual league averages from the data, not hardcoded defaults
+      const leagueHomeAvg = hs.leagueAvgHomeGoals || as_.leagueAvgHomeGoals || 1.5
+      const leagueAwayAvg = hs.leagueAvgAwayGoals || as_.leagueAvgAwayGoals || 1.2
+
+      const pred = predictMatch(homeAtk, homeDef, awayAtk, awayDef, leagueHomeAvg, leagueAwayAvg)
 
       // Find best value bet across all bookmakers
       const matchOdds = await prisma.matchOdds.findMany({
@@ -971,6 +999,7 @@ async function syncOddsAndPredict() {
           bestValueBookmaker: hasValue ? bestBookmaker : null,
           kellyStake: hasValue ? bestKelly : null,
           confidence,
+          modelVersion: 'poisson_v2_home_away',
         },
         create: {
           matchExternalId: match.externalId,
@@ -987,6 +1016,7 @@ async function syncOddsAndPredict() {
           bestValueBookmaker: hasValue ? bestBookmaker : null,
           kellyStake: hasValue ? bestKelly : null,
           confidence,
+          modelVersion: 'poisson_v2_home_away',
         },
       })
     }
