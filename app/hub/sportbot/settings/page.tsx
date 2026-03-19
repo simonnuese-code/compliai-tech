@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'motion/react'
 import QRCode from 'react-qr-code'
@@ -17,6 +17,7 @@ import {
   QrCode,
   Wifi,
   WifiOff,
+  Unplug,
 } from 'lucide-react'
 
 interface Settings {
@@ -46,7 +47,9 @@ export default function SportBotSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [connectingWA, setConnectingWA] = useState(false)
+  const [disconnectingWA, setDisconnectingWA] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
+  const [qrError, setQrError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchSettings() {
@@ -85,51 +88,79 @@ export default function SportBotSettingsPage() {
     }
   }
 
-  // Poll for connection status
+  // Poll for QR updates and connection status
+  const pollStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sportbot/whatsapp')
+      if (!res.ok) return null
+      return await res.json()
+    } catch {
+      return null
+    }
+  }, [])
+
   useEffect(() => {
-    if (!qrCode && whatsapp?.status !== 'QR_READY') return
+    // Only poll when we have a QR code showing or waiting for one
+    const shouldPoll = qrCode || (whatsapp?.status === 'QR_READY')
+    if (!shouldPoll) return
 
     const interval = setInterval(async () => {
-      try {
-        const res = await fetch('/api/sportbot/whatsapp')
-        if (res.ok) {
-          const data = await res.json()
-          
-          if (data.status === 'CONNECTED') {
-            setWhatsapp(data)
-            setQrCode(null)
-            clearInterval(interval)
-          } else if (data.qrCode && data.qrCode !== qrCode) {
-            setQrCode(data.qrCode)
-            setWhatsapp(data)
-          }
-        }
-      } catch (err) {
-        console.error('Failed to poll status:', err)
+      const data = await pollStatus()
+      if (!data) return
+
+      if (data.status === 'CONNECTED') {
+        setWhatsapp({ status: 'CONNECTED', phoneNumber: data.phoneNumber, lastSeenAt: new Date().toISOString() })
+        setQrCode(null)
+        setQrError(null)
+      } else if (data.status === 'DISCONNECTED' && qrCode) {
+        // Session timed out or was destroyed
+        setQrCode(null)
+        setQrError('QR-Code abgelaufen. Bitte erneut verbinden.')
+        setWhatsapp({ status: 'DISCONNECTED', phoneNumber: null, lastSeenAt: null })
+      } else if (data.status === 'QR_READY' && data.qrCode) {
+        // Update QR code (it rotates every ~20s)
+        setQrCode(data.qrCode)
+        setQrError(null)
       }
     }, 2000)
 
     return () => clearInterval(interval)
-  }, [qrCode, whatsapp?.status])
+  }, [qrCode, whatsapp?.status, pollStatus])
 
   const handleConnectWhatsApp = async () => {
     setConnectingWA(true)
+    setQrError(null)
     try {
       const res = await fetch('/api/sportbot/whatsapp', { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
         if (data.qrCode) {
           setQrCode(data.qrCode)
-          if (whatsapp) setWhatsapp({ ...whatsapp, status: 'QR_READY' })
-        } else {
-          // Force polling to start immediately to fetch the QR code when ready
-          if (whatsapp) setWhatsapp({ ...whatsapp, status: 'QR_READY' })
+          setWhatsapp({ status: 'QR_READY', phoneNumber: null, lastSeenAt: null })
+        } else if (data.status === 'QR_READY') {
+          // QR not ready yet, polling will pick it up
+          setWhatsapp({ status: 'QR_READY', phoneNumber: null, lastSeenAt: null })
         }
+      } else {
+        setQrError('Verbindung fehlgeschlagen. Bitte versuche es erneut.')
       }
-    } catch (err) {
-      console.error('Failed to connect WhatsApp:', err)
+    } catch {
+      setQrError('WhatsApp-Service nicht erreichbar.')
     } finally {
       setConnectingWA(false)
+    }
+  }
+
+  const handleDisconnectWhatsApp = async () => {
+    setDisconnectingWA(true)
+    try {
+      await fetch('/api/sportbot/whatsapp', { method: 'DELETE' })
+      setWhatsapp({ status: 'DISCONNECTED', phoneNumber: null, lastSeenAt: null })
+      setQrCode(null)
+    } catch {
+      console.error('Failed to disconnect')
+    } finally {
+      setDisconnectingWA(false)
     }
   }
 
@@ -201,14 +232,24 @@ export default function SportBotSettingsPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
+                className="space-y-3"
               >
-                <Wifi className="h-5 w-5 text-emerald-400" />
-                <div>
-                  <p className="text-sm font-semibold text-emerald-400">Verbunden</p>
-                  {whatsapp.phoneNumber && (
-                    <p className="text-xs text-slate-400">{whatsapp.phoneNumber}</p>
-                  )}
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <Wifi className="h-5 w-5 text-emerald-400" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-emerald-400">Verbunden</p>
+                    {whatsapp.phoneNumber && (
+                      <p className="text-xs text-slate-400">+{whatsapp.phoneNumber}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleDisconnectWhatsApp}
+                    disabled={disconnectingWA}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {disconnectingWA ? <Loader2 className="h-3 w-3 animate-spin" /> : <Unplug className="h-3 w-3" />}
+                    Trennen
+                  </button>
                 </div>
               </motion.div>
             ) : qrCode ? (
@@ -230,9 +271,15 @@ export default function SportBotSettingsPage() {
                     style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                   />
                 </div>
-                <p className="text-xs text-slate-500 text-center max-w-[200px]">
-                  WhatsApp → Einstellungen → Verknüpfte Geräte → Gerät hinzufügen
+                <p className="text-xs text-slate-500 text-center max-w-[240px] mb-4">
+                  WhatsApp &rarr; Einstellungen &rarr; Verknüpfte Geräte &rarr; Gerät hinzufügen
                 </p>
+                <button
+                  onClick={() => { setQrCode(null); setWhatsapp({ status: 'DISCONNECTED', phoneNumber: null, lastSeenAt: null }) }}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  Abbrechen
+                </button>
               </motion.div>
             ) : (
               <motion.div
@@ -245,20 +292,18 @@ export default function SportBotSettingsPage() {
                 <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 flex-1 w-full">
                   <WifiOff className="h-5 w-5 text-slate-500" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-300">
-                      {whatsapp?.status === 'QR_READY' && !qrCode ? "Verbindung wird hergestellt..." : "Nicht verbunden"}
-                    </p>
+                    <p className="text-sm font-semibold text-slate-300">Nicht verbunden</p>
                     <p className="text-xs text-slate-500">
-                      {whatsapp?.status === 'QR_READY' && !qrCode ? "Warte auf QR-Code vom Server" : "Verbinde WhatsApp für Live-Benachrichtigungen"}
+                      {qrError || 'Verbinde WhatsApp für Live-Benachrichtigungen'}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleConnectWhatsApp}
-                  disabled={connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode)}
+                  disabled={connectingWA}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 sm:py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-400 transition-all disabled:opacity-50"
                 >
-                  {connectingWA || (whatsapp?.status === 'QR_READY' && !qrCode) ? (
+                  {connectingWA ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <QrCode className="h-4 w-4" />

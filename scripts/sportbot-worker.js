@@ -53,12 +53,15 @@ async function sendWhatsApp(sessionName, phoneNumber, message) {
       }),
     })
     if (res.ok) {
-      console.log(`📱 WhatsApp sent to ${phoneNumber}`)
+      console.log(`📱 WhatsApp sent to +${phoneNumber}`)
+      return true
     } else {
-      console.error(`📱 WhatsApp failed: ${res.status}`)
+      console.error(`📱 WhatsApp send failed: ${res.status} ${await res.text()}`)
+      return false
     }
   } catch (err) {
     console.error('📱 WhatsApp error:', err.message)
+    return false
   }
 }
 
@@ -71,39 +74,41 @@ async function sendNotification(userId, matchExternalId, eventKey, message) {
   })
   if (existing) return false
 
+  // Check user settings first
+  const settings = await prisma.sportBotSettings.findUnique({
+    where: { userId },
+  })
+  if (settings && !settings.notificationsEnabled) return false
+
+  // Check quiet hours
+  if (settings?.quietHoursStart && settings?.quietHoursEnd) {
+    const now = new Date()
+    const tz = settings.timezone || 'Europe/Berlin'
+    const currentTime = now.toLocaleTimeString('de-DE', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false })
+    const start = settings.quietHoursStart
+    const end = settings.quietHoursEnd
+    if (start > end) {
+      if (currentTime >= start || currentTime < end) return false
+    } else {
+      if (currentTime >= start && currentTime < end) return false
+    }
+  }
+
   // Get user's WhatsApp session
   const waSession = await prisma.whatsAppSession.findUnique({
     where: { userId },
   })
 
-  if (waSession?.status === 'CONNECTED' && waSession.phoneNumber) {
-    // Check quiet hours
-    const settings = await prisma.sportBotSettings.findUnique({
-      where: { userId },
-    })
-
-    if (settings && !settings.notificationsEnabled) return false
-
-    if (settings?.quietHoursStart && settings?.quietHoursEnd) {
-      const now = new Date()
-      const tz = settings.timezone || 'Europe/Berlin'
-      const currentTime = now.toLocaleTimeString('de-DE', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false })
-      
-      const start = settings.quietHoursStart
-      const end = settings.quietHoursEnd
-      
-      if (start > end) {
-        // Overnight quiet hours (e.g. 23:00 - 07:00)
-        if (currentTime >= start || currentTime < end) return false
-      } else {
-        if (currentTime >= start && currentTime < end) return false
-      }
-    }
-
-    await sendWhatsApp(waSession.sessionName, waSession.phoneNumber, message)
+  if (!waSession || waSession.status !== 'CONNECTED' || !waSession.phoneNumber) {
+    // Don't log — WhatsApp not connected, event should be retried next loop
+    return false
   }
 
-  // Log the notification
+  // Send the message
+  const sent = await sendWhatsApp(waSession.sessionName, waSession.phoneNumber, message)
+  if (!sent) return false
+
+  // Only log after successful send (deduplication)
   await prisma.sentNotification.create({
     data: {
       userId,
@@ -395,6 +400,42 @@ async function syncUpcomingMatches() {
   console.log(`📅 Synced ${relevantMatches.length} matches`)
 }
 
+// ===== WHATSAPP SESSION SYNC =====
+
+async function syncWhatsAppSessions() {
+  // Sync all WhatsApp sessions from the bridge to the DB
+  const sessions = await prisma.whatsAppSession.findMany()
+
+  for (const wa of sessions) {
+    try {
+      const res = await fetch(`${WAHA_URL}/api/sessions/${wa.sessionName}`)
+      if (!res.ok) continue
+      const data = await res.json()
+
+      const bridgeStatus = data.status === 'WORKING' ? 'CONNECTED'
+        : data.status === 'SCAN_QR_CODE' ? 'QR_READY'
+        : data.status === 'NOT_FOUND' ? 'DISCONNECTED'
+        : wa.status
+
+      const phoneNumber = data.phoneNumber || wa.phoneNumber
+
+      if (bridgeStatus !== wa.status || (phoneNumber && phoneNumber !== wa.phoneNumber)) {
+        await prisma.whatsAppSession.update({
+          where: { id: wa.id },
+          data: {
+            status: bridgeStatus,
+            ...(phoneNumber ? { phoneNumber } : {}),
+            ...(bridgeStatus === 'CONNECTED' ? { lastSeenAt: new Date() } : {}),
+          },
+        })
+        console.log(`📱 [${wa.sessionName}] DB synced: ${wa.status} → ${bridgeStatus}${phoneNumber ? ` (phone: +${phoneNumber})` : ''}`)
+      }
+    } catch {
+      // Bridge unreachable — keep existing DB state
+    }
+  }
+}
+
 // ===== MAIN LOOP =====
 
 let isLiveMode = false
@@ -438,7 +479,8 @@ async function checkLiveMatches() {
   }
 
   // Also process recently finished matches
-  const finishedData = await footballApi('/matches?status=FINISHED&dateFrom=' + new Date().toISOString().split('T')[0])
+  const todayStr = new Date().toISOString().split('T')[0]
+  const finishedData = await footballApi(`/matches?status=FINISHED&dateFrom=${todayStr}&dateTo=${todayStr}`)
   if (finishedData) {
     const finishedMatches = (finishedData.matches || []).filter(m =>
       allTeamIds.has(m.homeTeam.id) || allTeamIds.has(m.awayTeam.id)
@@ -461,8 +503,10 @@ async function main() {
 
   // Initial sync
   await syncUpcomingMatches()
+  await syncWhatsAppSessions()
 
   let lastSyncTime = Date.now()
+  let lastWaSyncTime = Date.now()
   let loopCount = 0
 
   while (true) {
@@ -474,6 +518,12 @@ async function main() {
 
       // Check pre-match notifications every loop
       await checkPreMatchNotifications()
+
+      // Sync WhatsApp sessions every 30 seconds
+      if (Date.now() - lastWaSyncTime > 30000) {
+        await syncWhatsAppSessions()
+        lastWaSyncTime = Date.now()
+      }
 
       // Re-sync schedule every 6 hours
       if (Date.now() - lastSyncTime > 6 * 60 * 60 * 1000) {

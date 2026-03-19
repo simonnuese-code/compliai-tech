@@ -3,19 +3,22 @@
  * ========================
  * Lightweight WhatsApp Web bridge using whatsapp-web.js
  * Runs on Hetzner as a REST API on port 3001
- * 
+ *
  * Endpoints:
- *   POST /api/sessions/start   - Start a new session, returns QR code
- *   GET  /api/sessions/:name   - Get session status
- *   GET  /api/sessions/:name/auth/qr - Get QR code as data URL
+ *   POST /api/sessions/start    - Start a new session, returns QR code
+ *   GET  /api/sessions/:name    - Get session status
+ *   GET  /api/sessions/:name/auth/qr - Get QR code
+ *   DELETE /api/sessions/:name  - Stop and destroy a session
  *   POST /api/sendText          - Send a text message
+ *   GET  /health                - Health check
  */
 
 const http = require('http')
 const { Client, LocalAuth } = require('whatsapp-web.js')
 
 const PORT = process.env.WA_BRIDGE_PORT || 3001
-const sessions = new Map() // sessionName -> { client, status, qr }
+const QR_TIMEOUT_MS = 120000 // 2 minutes — destroy session if QR not scanned
+const sessions = new Map() // sessionName -> { client, status, qr, phoneNumber, qrTimer }
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -33,21 +36,33 @@ function respond(res, status, data) {
   res.end(JSON.stringify(data))
 }
 
+async function destroySession(name) {
+  const session = sessions.get(name)
+  if (!session) return
+  if (session.qrTimer) clearTimeout(session.qrTimer)
+  try { await session.client.destroy() } catch {}
+  sessions.delete(name)
+  console.log(`🗑️ [${name}] Session destroyed`)
+}
+
 async function startSession(name) {
+  // If already connected, just return status
   if (sessions.has(name)) {
-    const session = sessions.get(name)
-    if (session.status === 'WORKING') {
-      return { status: 'WORKING' }
+    const existing = sessions.get(name)
+    if (existing.status === 'WORKING') {
+      return { status: 'WORKING', phoneNumber: existing.phoneNumber }
     }
-    // Destroy old session and restart
-    try { await session.client.destroy() } catch {}
+    // Destroy stale session before restarting
+    await destroySession(name)
   }
 
   const sessionData = {
     client: null,
     status: 'STARTING',
     qr: null,
+    qrCount: 0,
     phoneNumber: null,
+    qrTimer: null,
   }
   sessions.set(name, sessionData)
 
@@ -69,40 +84,59 @@ async function startSession(name) {
   sessionData.client = client
 
   client.on('qr', qr => {
-    console.log(`📱 [${name}] QR code received`)
+    sessionData.qrCount++
+    console.log(`📱 [${name}] QR code received (#${sessionData.qrCount})`)
     sessionData.qr = qr
     sessionData.status = 'SCAN_QR_CODE'
+
+    // Reset QR timeout — if nobody scans within 2 min, destroy
+    if (sessionData.qrTimer) clearTimeout(sessionData.qrTimer)
+    sessionData.qrTimer = setTimeout(async () => {
+      if (sessionData.status === 'SCAN_QR_CODE') {
+        console.log(`⏰ [${name}] QR timeout — no scan in ${QR_TIMEOUT_MS / 1000}s, destroying session`)
+        await destroySession(name)
+      }
+    }, QR_TIMEOUT_MS)
   })
 
   client.on('ready', () => {
     console.log(`✅ [${name}] WhatsApp connected!`)
     sessionData.status = 'WORKING'
     sessionData.qr = null
-    // Get phone number
+    if (sessionData.qrTimer) { clearTimeout(sessionData.qrTimer); sessionData.qrTimer = null }
     const info = client.info
     if (info?.wid?.user) {
       sessionData.phoneNumber = info.wid.user
-      console.log(`📱 [${name}] Phone: ${info.wid.user}`)
+      console.log(`📱 [${name}] Phone: +${info.wid.user}`)
     }
   })
 
   client.on('authenticated', () => {
     console.log(`🔐 [${name}] Authenticated`)
     sessionData.status = 'AUTHENTICATED'
+    if (sessionData.qrTimer) { clearTimeout(sessionData.qrTimer); sessionData.qrTimer = null }
   })
 
   client.on('disconnected', reason => {
     console.log(`❌ [${name}] Disconnected: ${reason}`)
+    if (sessionData.qrTimer) clearTimeout(sessionData.qrTimer)
     sessionData.status = 'DISCONNECTED'
     sessions.delete(name)
   })
 
   client.on('auth_failure', msg => {
     console.error(`🔒 [${name}] Auth failed: ${msg}`)
+    if (sessionData.qrTimer) clearTimeout(sessionData.qrTimer)
     sessionData.status = 'FAILED'
   })
 
   await client.initialize()
+
+  // Wait briefly for QR to arrive
+  if (sessionData.status === 'STARTING') {
+    await new Promise(r => setTimeout(r, 3000))
+  }
+
   return { status: sessionData.status, qr: sessionData.qr }
 }
 
@@ -115,21 +149,15 @@ async function sendText(sessionName, chatId, text) {
   return { success: true }
 }
 
-// QR Code to Data URL converter
-function qrToDataUrl(qrText) {
-  // Return the raw QR string - frontend can render it
-  return qrText
-}
-
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`)
   const path = url.pathname
 
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Api-Key')
-  
+
   if (req.method === 'OPTIONS') {
     respond(res, 200, {})
     return
@@ -145,6 +173,15 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // DELETE /api/sessions/:name — stop and destroy session
+    const deleteMatch = path.match(/^\/api\/sessions\/([^/]+)$/)
+    if (deleteMatch && req.method === 'DELETE') {
+      const name = deleteMatch[1]
+      await destroySession(name)
+      respond(res, 200, { status: 'DESTROYED' })
+      return
+    }
+
     // GET /api/sessions/:name
     const sessionMatch = path.match(/^\/api\/sessions\/([^/]+)$/)
     if (sessionMatch && req.method === 'GET') {
@@ -157,7 +194,7 @@ const server = http.createServer(async (req, res) => {
       respond(res, 200, {
         status: session.status,
         phoneNumber: session.phoneNumber,
-        qr: session.qr ? { url: qrToDataUrl(session.qr) } : null,
+        qr: session.qr ? { url: session.qr } : null,
       })
       return
     }
@@ -171,7 +208,7 @@ const server = http.createServer(async (req, res) => {
         respond(res, 404, { error: 'No QR available' })
         return
       }
-      respond(res, 200, { url: qrToDataUrl(session.qr) })
+      respond(res, 200, { url: session.qr })
       return
     }
 
