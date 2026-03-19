@@ -18,6 +18,15 @@ const { Client, LocalAuth } = require('whatsapp-web.js')
 
 const PORT = process.env.WA_BRIDGE_PORT || 3001
 const QR_TIMEOUT_MS = 120000 // 2 minutes — destroy session if QR not scanned
+
+// Prevent unhandled errors from crashing the process
+// whatsapp-web.js throws "Execution context was destroyed" during auth navigation
+process.on('uncaughtException', err => {
+  console.error('⚠️ Uncaught exception (non-fatal):', err.message)
+})
+process.on('unhandledRejection', err => {
+  console.error('⚠️ Unhandled rejection (non-fatal):', err?.message || err)
+})
 const sessions = new Map() // sessionName -> { client, status, qr, phoneNumber, qrTimer }
 
 function parseBody(req) {
@@ -66,10 +75,12 @@ async function startSession(name) {
   }
   sessions.set(name, sessionData)
 
+  const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/snap/bin/chromium'
   const client = new Client({
     authStrategy: new LocalAuth({ clientId: name, dataPath: '/opt/whatsapp-sessions' }),
     puppeteer: {
       headless: true,
+      executablePath: chromePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -130,11 +141,16 @@ async function startSession(name) {
     sessionData.status = 'FAILED'
   })
 
-  await client.initialize()
+  // initialize() can throw during WhatsApp Web navigation — catch and keep running
+  try {
+    await client.initialize()
+  } catch (err) {
+    console.error(`⚠️ [${name}] Initialize error (may recover):`, err.message)
+  }
 
   // Wait briefly for QR to arrive
   if (sessionData.status === 'STARTING') {
-    await new Promise(r => setTimeout(r, 3000))
+    await new Promise(r => setTimeout(r, 5000))
   }
 
   return { status: sessionData.status, qr: sessionData.qr }
