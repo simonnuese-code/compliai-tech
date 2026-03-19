@@ -905,14 +905,14 @@ async function syncOddsAndPredict() {
       }
 
       // Generate prediction using full season stats
-      // Try current season first, then previous season as fallback
+      // Pick the row with the most matches (not just latest season, as new season may have few games)
       const homeStats = await prisma.teamStats.findFirst({
         where: { teamId: match.homeTeamId, competitionCode: compCode },
-        orderBy: { season: 'desc' },
+        orderBy: { matchesPlayed: 'desc' },
       })
       const awayStats = await prisma.teamStats.findFirst({
         where: { teamId: match.awayTeamId, competitionCode: compCode },
-        orderBy: { season: 'desc' },
+        orderBy: { matchesPlayed: 'desc' },
       })
 
       // Skip if both teams have no stats (prediction would be meaningless)
