@@ -397,7 +397,54 @@ async function syncUpcomingMatches() {
     })
   }
 
-  console.log(`📅 Synced ${relevantMatches.length} matches`)
+  console.log(`📅 Synced ${relevantMatches.length} upcoming matches`)
+
+  // Also sync past results (last 7 days) so the website can show them
+  const pastFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const pastTo = new Date().toISOString().split('T')[0]
+
+  const pastData = await footballApi(`/matches?dateFrom=${pastFrom}&dateTo=${pastTo}&status=FINISHED`)
+  if (pastData) {
+    const pastMatches = (pastData.matches || []).filter(m =>
+      teamIds.has(m.homeTeam.id) || teamIds.has(m.awayTeam.id)
+    )
+
+    for (const match of pastMatches) {
+      await prisma.sportMatch.upsert({
+        where: { externalId: match.id },
+        update: {
+          status: match.status,
+          homeScoreFullTime: match.score?.fullTime?.home,
+          awayScoreFullTime: match.score?.fullTime?.away,
+          homeScoreHalfTime: match.score?.halfTime?.home,
+          awayScoreHalfTime: match.score?.halfTime?.away,
+          lastUpdatedAt: new Date(),
+        },
+        create: {
+          externalId: match.id,
+          competitionCode: match.competition?.code || '',
+          competitionName: match.competition?.name || '',
+          competitionEmblem: match.competition?.emblem,
+          matchday: match.matchday,
+          stage: match.stage,
+          homeTeamId: match.homeTeam.id,
+          homeTeamName: match.homeTeam.name,
+          homeTeamCrest: match.homeTeam.crest,
+          awayTeamId: match.awayTeam.id,
+          awayTeamName: match.awayTeam.name,
+          awayTeamCrest: match.awayTeam.crest,
+          status: match.status,
+          utcDate: new Date(match.utcDate),
+          homeScoreFullTime: match.score?.fullTime?.home,
+          awayScoreFullTime: match.score?.fullTime?.away,
+          homeScoreHalfTime: match.score?.halfTime?.home,
+          awayScoreHalfTime: match.score?.halfTime?.away,
+        },
+      })
+    }
+
+    console.log(`📅 Synced ${pastMatches.length} past results (last 7 days)`)
+  }
 }
 
 // ===== WHATSAPP SESSION SYNC =====
