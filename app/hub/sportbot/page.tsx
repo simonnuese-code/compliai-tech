@@ -58,6 +58,15 @@ interface ValueBetMatch {
     bestValueBookmaker: string | null
     kellyStake: number | null
     confidence: number
+    modelVersion?: string
+    eloHomeRating?: number | null
+    eloAwayRating?: number | null
+    restDaysHome?: number | null
+    restDaysAway?: number | null
+    h2hAdjustment?: number | null
+    blendedHomeProb?: number | null
+    blendedDrawProb?: number | null
+    blendedAwayProb?: number | null
   } | null
   odds: Array<{
     bookmaker: string
@@ -305,6 +314,50 @@ function ValueBetCard({ data }: { data: ValueBetMatch }) {
               </span>
             </div>
           </div>
+
+          {/* Model Factors (v3 Pro) */}
+          {prediction.eloHomeRating && (
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {/* ELO */}
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-slate-500">ELO</span>
+                <span className={`font-medium tabular-nums ${(prediction.eloHomeRating ?? 1500) >= 1600 ? 'text-emerald-400' : (prediction.eloHomeRating ?? 1500) >= 1450 ? 'text-slate-300' : 'text-red-400'}`}>
+                  {Math.round(prediction.eloHomeRating ?? 1500)}
+                </span>
+                <span className="text-slate-600">vs</span>
+                <span className={`font-medium tabular-nums ${(prediction.eloAwayRating ?? 1500) >= 1600 ? 'text-emerald-400' : (prediction.eloAwayRating ?? 1500) >= 1450 ? 'text-slate-300' : 'text-red-400'}`}>
+                  {Math.round(prediction.eloAwayRating ?? 1500)}
+                </span>
+              </div>
+              {/* Rest Days */}
+              {(prediction.restDaysHome !== null || prediction.restDaysAway !== null) && (
+                <div className="flex items-center gap-1.5 text-xs justify-end">
+                  <span className="text-slate-500">Ruhetage</span>
+                  <span className={`font-medium ${(prediction.restDaysHome ?? 5) <= 3 ? 'text-amber-400' : 'text-slate-300'}`}>
+                    {prediction.restDaysHome ?? '?'}d
+                  </span>
+                  <span className="text-slate-600">vs</span>
+                  <span className={`font-medium ${(prediction.restDaysAway ?? 5) <= 3 ? 'text-amber-400' : 'text-slate-300'}`}>
+                    {prediction.restDaysAway ?? '?'}d
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Model version badge */}
+          {prediction.modelVersion && (
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
+                {prediction.modelVersion === 'poisson_v3_pro' ? 'v3 Pro · 7 Faktoren' : prediction.modelVersion}
+              </span>
+              {prediction.h2hAdjustment && prediction.h2hAdjustment > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  H2H
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Low confidence warning */}
           {prediction.confidence < 0.5 && (
@@ -634,15 +687,24 @@ export default function SportBotPage() {
                         {valueBets.map((vb, i) => (
                           <ValueBetCard key={vb.match.externalId || i} data={vb} />
                         ))}
-                        {modelPerformance.matchesScored > 0 && (
-                          <div className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
-                            <p className="text-xs text-slate-500">
-                              Modell-Genauigkeit: <span className="text-slate-300 font-medium">
-                                {((modelPerformance.avgBrierScore ?? 0) * 100).toFixed(1)} Brier Score
-                              </span> ({modelPerformance.matchesScored} Spiele ausgewertet)
-                            </p>
+                        {/* Model info footer */}
+                        <div className="p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-semibold">
+                              Poisson v3 Pro
+                            </span>
                           </div>
-                        )}
+                          <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                            7 Faktoren: Dixon-Coles · ELO Rating · Markt-Blend · Ruhetage · H2H · Regression · Form
+                          </p>
+                          {modelPerformance.matchesScored > 0 && (
+                            <p className="text-xs text-slate-500 text-center mt-1.5">
+                              Genauigkeit: <span className="text-slate-300 font-medium">
+                                {((modelPerformance.avgBrierScore ?? 0) * 100).toFixed(1)} Brier
+                              </span> ({modelPerformance.matchesScored} ausgewertet)
+                            </p>
+                          )}
+                        </div>
                       </>
                     )}
                   </motion.div>

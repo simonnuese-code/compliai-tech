@@ -485,11 +485,27 @@ async function syncWhatsAppSessions() {
   }
 }
 
-// ===== VALUE BETTING: POISSON MODEL =====
+// ===== POISSON v3 PRO: MULTI-FACTOR PREDICTION MODEL =====
+//
+// Improvements over v2:
+// 1. Dixon-Coles correction (adjusts low-scoring outcomes)
+// 2. ELO rating system (dynamic team strength)
+// 3. Market-implied probability blending (60% model + 40% market)
+// 4. Rest days / fixture congestion
+// 5. Head-to-head historical adjustment
+// 6. Regression to mean (shrinkage for extreme values)
+// 7. Confidence-weighted form with goal supremacy
 
 const FORM_WEIGHT = 0.3
 const MAX_GOALS = 8
+const DIXON_COLES_RHO = -0.13  // Typical ρ from literature (negative = more draws)
+const ELO_K_BASE = 20          // Base K-factor for ELO updates
+const ELO_HOME_ADVANTAGE = 65  // ELO points for home advantage
+const MARKET_BLEND_ALPHA = 0.6 // 60% model, 40% market
+const SHRINKAGE_K = 8          // Regression to mean parameter
+const H2H_WEIGHT = 0.08        // Max 8% adjustment from head-to-head
 
+// --- Poisson PMF ---
 function poissonPmf(lambda, k) {
   if (lambda <= 0) return k === 0 ? 1 : 0
   let factorial = 1
@@ -497,6 +513,57 @@ function poissonPmf(lambda, k) {
   return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial
 }
 
+// --- Dixon-Coles Correction ---
+// Adjusts P(0,0), P(1,0), P(0,1), P(1,1) for correlation in low scores
+function dixonColesCorrection(homeGoals, awayGoals, homeXG, awayXG, rho) {
+  if (homeGoals === 0 && awayGoals === 0) {
+    return 1 - homeXG * awayXG * rho
+  } else if (homeGoals === 1 && awayGoals === 0) {
+    return 1 + awayXG * rho
+  } else if (homeGoals === 0 && awayGoals === 1) {
+    return 1 + homeXG * rho
+  } else if (homeGoals === 1 && awayGoals === 1) {
+    return 1 - rho
+  }
+  return 1.0 // No correction for other scores
+}
+
+// --- ELO Rating System ---
+function eloExpectedScore(ratingA, ratingB) {
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400))
+}
+
+function eloUpdate(rating, expected, actual, goalDiff) {
+  // K-factor scales with goal difference (FiveThirtyEight approach)
+  const k = ELO_K_BASE * (goalDiff > 1 ? Math.log(goalDiff + 1) : 1)
+  return rating + k * (actual - expected)
+}
+
+// Convert ELO difference to win probability adjustment
+function eloToProb(homeElo, awayElo) {
+  const diff = homeElo + ELO_HOME_ADVANTAGE - awayElo
+  // Returns a multiplier: >1 favors home, <1 favors away
+  return 1 / (1 + Math.pow(10, -diff / 400))
+}
+
+// --- Regression to Mean ---
+// Shrinks extreme attack/defense values toward 1.0 based on sample size
+function regressToMean(value, matchesPlayed, k = SHRINKAGE_K) {
+  const weight = matchesPlayed / (matchesPlayed + k)
+  return value * weight + 1.0 * (1 - weight)
+}
+
+// --- Rest Days Factor ---
+function restDaysFactor(days) {
+  if (days === null || days === undefined) return 1.0
+  if (days <= 2) return 0.93   // Very fatigued (e.g., CL Wed → League Sat)
+  if (days <= 3) return 0.96   // Slightly fatigued
+  if (days <= 7) return 1.0    // Normal rest
+  if (days <= 14) return 0.98  // Slight rustiness from long break
+  return 0.96                  // Extended break (winter, injury layoff)
+}
+
+// --- Core Prediction with Dixon-Coles ---
 function predictMatch(homeAttack, homeDefense, awayAttack, awayDefense, leagueHomeAvg = 1.55, leagueAwayAvg = 1.25) {
   const homeXG = Math.max(0.2, Math.min(5.0, homeAttack * awayDefense * leagueHomeAvg))
   const awayXG = Math.max(0.2, Math.min(5.0, awayAttack * homeDefense * leagueAwayAvg))
@@ -504,7 +571,11 @@ function predictMatch(homeAttack, homeDefense, awayAttack, awayDefense, leagueHo
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0
   for (let h = 0; h <= MAX_GOALS; h++) {
     for (let a = 0; a <= MAX_GOALS; a++) {
-      const prob = poissonPmf(homeXG, h) * poissonPmf(awayXG, a)
+      const baseProb = poissonPmf(homeXG, h) * poissonPmf(awayXG, a)
+      // Apply Dixon-Coles correction for low-scoring outcomes
+      const dcFactor = dixonColesCorrection(h, a, homeXG, awayXG, DIXON_COLES_RHO)
+      const prob = baseProb * dcFactor
+
       if (h > a) homeWin += prob
       else if (h === a) draw += prob
       else awayWin += prob
@@ -512,9 +583,58 @@ function predictMatch(homeAttack, homeDefense, awayAttack, awayDefense, leagueHo
     }
   }
 
+  // Normalize after Dixon-Coles (correction can shift total slightly)
+  const total = homeWin + draw + awayWin
+  if (total > 0) {
+    homeWin /= total
+    draw /= total
+    awayWin /= total
+  }
+
   return { homeWin, draw, awayWin, over25, under25: 1 - over25, homeXG, awayXG }
 }
 
+// --- Market-Implied Probabilities ---
+function getMarketImpliedProbs(matchOdds) {
+  if (!matchOdds || matchOdds.length === 0) return null
+
+  // Average odds across all bookmakers (consensus)
+  let sumHome = 0, sumDraw = 0, sumAway = 0, count = 0
+  for (const odds of matchOdds) {
+    sumHome += 1 / odds.homeOdds
+    sumDraw += 1 / odds.drawOdds
+    sumAway += 1 / odds.awayOdds
+    count++
+  }
+
+  if (count === 0) return null
+
+  // Average implied probs (with overround)
+  const impliedHome = sumHome / count
+  const impliedDraw = sumDraw / count
+  const impliedAway = sumAway / count
+
+  // Remove overround (normalize to sum = 1)
+  const overround = impliedHome + impliedDraw + impliedAway
+  return {
+    home: impliedHome / overround,
+    draw: impliedDraw / overround,
+    away: impliedAway / overround,
+    overround, // Track for confidence (lower = more efficient market)
+  }
+}
+
+// --- Blend Model + Market ---
+function blendProbabilities(model, market, alpha = MARKET_BLEND_ALPHA) {
+  if (!market) return { home: model.homeWin, draw: model.draw, away: model.awayWin }
+  return {
+    home: model.homeWin * alpha + market.home * (1 - alpha),
+    draw: model.draw * alpha + market.draw * (1 - alpha),
+    away: model.awayWin * alpha + market.away * (1 - alpha),
+  }
+}
+
+// --- EV & Kelly ---
 function calculateEV(trueProb, decimalOdds) {
   return (trueProb * decimalOdds) - 1
 }
@@ -648,93 +768,98 @@ async function updateTeamStats() {
       const leagueAvgAwayGoals = totalAwayGoals / totalGames
       console.log(`📊 [${compCode}] League avg: ${leagueAvgHomeGoals.toFixed(2)} home, ${leagueAvgAwayGoals.toFixed(2)} away (${totalGames} games)`)
 
-      // 3. Build per-team statistics with full home/away split
+      // 3. Build per-team statistics with full home/away split + ELO
       const teamData = {}
-      for (const m of allMatches) {
-        const hg = m.score?.fullTime?.home
-        const ag = m.score?.fullTime?.away
-        if (hg === null || hg === undefined || ag === null || ag === undefined) continue
+
+      // Sort matches chronologically for ELO calculation
+      const sortedMatches = [...allMatches]
+        .filter(m => m.score?.fullTime?.home !== null && m.score?.fullTime?.home !== undefined)
+        .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
+
+      // Initialize all teams
+      for (const m of sortedMatches) {
+        for (const [id, name] of [[m.homeTeam.id, m.homeTeam.name], [m.awayTeam.id, m.awayTeam.name]]) {
+          if (!teamData[id]) {
+            teamData[id] = {
+              teamName: name,
+              goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
+              homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
+              awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
+              recentMatches: [],
+              elo: 1500, // Starting ELO
+              lastMatchDate: null,
+            }
+          }
+        }
+      }
+
+      // Process matches chronologically (important for ELO)
+      for (const m of sortedMatches) {
+        const hg = m.score.fullTime.home
+        const ag = m.score.fullTime.away
 
         const homeId = m.homeTeam.id
         const awayId = m.awayTeam.id
-
-        // Initialize teams
-        if (!teamData[homeId]) {
-          teamData[homeId] = {
-            teamName: m.homeTeam.name,
-            goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
-            homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
-            awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
-            recentMatches: [],
-          }
-        }
-        if (!teamData[awayId]) {
-          teamData[awayId] = {
-            teamName: m.awayTeam.name,
-            goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
-            homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
-            awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
-            recentMatches: [],
-          }
-        }
-
-        // Home team stats
         const ht = teamData[homeId]
-        ht.goalsScored += hg
-        ht.goalsConceded += ag
-        ht.matchesPlayed++
-        ht.homeGoalsScored += hg
-        ht.homeGoalsConceded += ag
-        ht.homeMatches++
-        ht.recentMatches.push({ scored: hg, conceded: ag, date: m.utcDate, isHome: true })
-
-        // Away team stats
         const at = teamData[awayId]
-        at.goalsScored += ag
-        at.goalsConceded += hg
-        at.matchesPlayed++
-        at.awayGoalsScored += ag
-        at.awayGoalsConceded += hg
-        at.awayMatches++
-        at.recentMatches.push({ scored: ag, conceded: hg, date: m.utcDate, isHome: false })
+
+        // === ELO UPDATE (before accumulating stats) ===
+        const homeExpected = eloExpectedScore(ht.elo + ELO_HOME_ADVANTAGE, at.elo)
+        const awayExpected = 1 - homeExpected
+        const goalDiff = Math.abs(hg - ag)
+        const homeActual = hg > ag ? 1 : hg === ag ? 0.5 : 0
+        const awayActual = 1 - homeActual
+
+        ht.elo = eloUpdate(ht.elo, homeExpected, homeActual, goalDiff)
+        at.elo = eloUpdate(at.elo, awayExpected, awayActual, goalDiff)
+
+        // === Accumulate stats ===
+        ht.goalsScored += hg; ht.goalsConceded += ag; ht.matchesPlayed++
+        ht.homeGoalsScored += hg; ht.homeGoalsConceded += ag; ht.homeMatches++
+        ht.recentMatches.push({ scored: hg, conceded: ag, date: m.utcDate, isHome: true, goalDiff: hg - ag })
+        ht.lastMatchDate = m.utcDate
+
+        at.goalsScored += ag; at.goalsConceded += hg; at.matchesPlayed++
+        at.awayGoalsScored += ag; at.awayGoalsConceded += hg; at.awayMatches++
+        at.recentMatches.push({ scored: ag, conceded: hg, date: m.utcDate, isHome: false, goalDiff: ag - hg })
+        at.lastMatchDate = m.utcDate
       }
 
-      // 4. Calculate attack/defense strengths with proper home/away split
+      // 4. Calculate attack/defense strengths with home/away split + regression to mean
       for (const [teamIdStr, data] of Object.entries(teamData)) {
         const teamId = parseInt(teamIdStr)
 
-        // Overall attack/defense strength (relative to league average)
         const leagueOverallAvg = (leagueAvgHomeGoals + leagueAvgAwayGoals) / 2
         const teamAvgScored = data.goalsScored / data.matchesPlayed
         const teamAvgConceded = data.goalsConceded / data.matchesPlayed
-        const attackStrength = leagueOverallAvg > 0 ? teamAvgScored / leagueOverallAvg : 1.0
-        const defenseStrength = leagueOverallAvg > 0 ? teamAvgConceded / leagueOverallAvg : 1.0
 
-        // HOME-SPECIFIC strengths (this is the key for accurate predictions)
-        // homeAttack = (home goals scored per home game) / league avg home goals
-        // homeDefense = (home goals conceded per home game) / league avg away goals
-        let homeAttackStrength = 1.0, homeDefenseStrength = 1.0
+        // Raw strengths
+        let attackRaw = leagueOverallAvg > 0 ? teamAvgScored / leagueOverallAvg : 1.0
+        let defenseRaw = leagueOverallAvg > 0 ? teamAvgConceded / leagueOverallAvg : 1.0
+
+        // Apply regression to mean (shrinkage) — prevents overconfidence with small samples
+        const attackStrength = regressToMean(attackRaw, data.matchesPlayed)
+        const defenseStrength = regressToMean(defenseRaw, data.matchesPlayed)
+
+        // HOME-SPECIFIC strengths with regression
+        let homeAttackStrength = attackStrength, homeDefenseStrength = defenseStrength
         if (data.homeMatches >= 3 && leagueAvgHomeGoals > 0 && leagueAvgAwayGoals > 0) {
-          homeAttackStrength = (data.homeGoalsScored / data.homeMatches) / leagueAvgHomeGoals
-          homeDefenseStrength = (data.homeGoalsConceded / data.homeMatches) / leagueAvgAwayGoals
-        } else {
-          homeAttackStrength = attackStrength
-          homeDefenseStrength = defenseStrength
+          const rawHA = (data.homeGoalsScored / data.homeMatches) / leagueAvgHomeGoals
+          const rawHD = (data.homeGoalsConceded / data.homeMatches) / leagueAvgAwayGoals
+          homeAttackStrength = regressToMean(rawHA, data.homeMatches)
+          homeDefenseStrength = regressToMean(rawHD, data.homeMatches)
         }
 
-        // AWAY-SPECIFIC strengths
-        // awayAttack = (away goals scored per away game) / league avg away goals
-        // awayDefense = (away goals conceded per away game) / league avg home goals
-        let awayAttackStrength = 1.0, awayDefenseStrength = 1.0
+        // AWAY-SPECIFIC strengths with regression
+        let awayAttackStrength = attackStrength, awayDefenseStrength = defenseStrength
         if (data.awayMatches >= 3 && leagueAvgHomeGoals > 0 && leagueAvgAwayGoals > 0) {
-          awayAttackStrength = (data.awayGoalsScored / data.awayMatches) / leagueAvgAwayGoals
-          awayDefenseStrength = (data.awayGoalsConceded / data.awayMatches) / leagueAvgHomeGoals
-        } else {
-          awayAttackStrength = attackStrength
-          awayDefenseStrength = defenseStrength
+          const rawAA = (data.awayGoalsScored / data.awayMatches) / leagueAvgAwayGoals
+          const rawAD = (data.awayGoalsConceded / data.awayMatches) / leagueAvgHomeGoals
+          awayAttackStrength = regressToMean(rawAA, data.awayMatches)
+          awayDefenseStrength = regressToMean(rawAD, data.awayMatches)
         }
 
-        // Form: last 5 matches, exponentially weighted (most recent = highest weight)
+        // Form: last 5 matches, exponentially weighted with goal supremacy
         const recent = data.recentMatches
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
           .slice(-5)
@@ -744,13 +869,16 @@ async function updateTeamStats() {
         if (recent.length >= 3) {
           let wScored = 0, wConceded = 0, wSum = 0
           recent.forEach((m, i) => {
-            const w = Math.pow(1.5, i) // Exponential weight: 1, 1.5, 2.25, 3.375, 5.06
-            wScored += m.scored * w
+            // Exponential weight: most recent match gets highest weight
+            const w = Math.pow(1.5, i)
+            // Goal supremacy bonus: big wins count more
+            const supremacyBonus = 1 + Math.max(0, m.goalDiff) * 0.1
+            wScored += m.scored * w * supremacyBonus
             wConceded += m.conceded * w
-            wSum += w
+            wSum += w * supremacyBonus
           })
           formAttack = leagueOverallAvg > 0 ? (wScored / wSum) / leagueOverallAvg : 1.0
-          formDefense = leagueOverallAvg > 0 ? (wConceded / wSum) / leagueOverallAvg : 1.0
+          formDefense = leagueOverallAvg > 0 ? (wConceded / (wSum / (1 + 0))) / leagueOverallAvg : 1.0
         }
 
         const statsData = {
@@ -774,6 +902,8 @@ async function updateTeamStats() {
           awayMatchesPlayed: data.awayMatches,
           formAttack: parseFloat(formAttack.toFixed(4)),
           formDefense: parseFloat(formDefense.toFixed(4)),
+          eloRating: parseFloat(data.elo.toFixed(1)),
+          lastMatchDate: data.lastMatchDate ? new Date(data.lastMatchDate) : null,
         }
 
         await prisma.teamStats.upsert({
@@ -785,7 +915,7 @@ async function updateTeamStats() {
         })
       }
 
-      console.log(`📊 [${compCode}] Updated stats for ${Object.keys(teamData).length} teams (${totalGames} matches)`)
+      console.log(`📊 [${compCode}] Updated stats + ELO for ${Object.keys(teamData).length} teams (${totalGames} matches)`)
 
       // Rate limit: wait between league fetches (free tier = 10 req/min)
       await sleep(7000)
@@ -904,8 +1034,8 @@ async function syncOddsAndPredict() {
         })
       }
 
-      // Generate prediction using full season stats
-      // Pick the row with the most matches (not just latest season, as new season may have few games)
+      // === GENERATE MULTI-FACTOR PREDICTION ===
+
       const homeStats = await prisma.teamStats.findFirst({
         where: { teamId: match.homeTeamId, competitionCode: compCode },
         orderBy: { matchesPlayed: 'desc' },
@@ -915,10 +1045,8 @@ async function syncOddsAndPredict() {
         orderBy: { matchesPlayed: 'desc' },
       })
 
-      // Skip if both teams have no stats (prediction would be meaningless)
       if (!homeStats && !awayStats) continue
 
-      // Use real stats or conservative default (1.0 = league average)
       const defaultStats = {
         attackStrength: 1.0, defenseStrength: 1.0,
         homeAttackStrength: 1.0, homeDefenseStrength: 1.0,
@@ -926,37 +1054,113 @@ async function syncOddsAndPredict() {
         formAttack: 1.0, formDefense: 1.0,
         matchesPlayed: 0, homeMatchesPlayed: 0, awayMatchesPlayed: 0,
         leagueAvgHomeGoals: 1.5, leagueAvgAwayGoals: 1.2,
+        eloRating: 1500, lastMatchDate: null,
       }
       const hs = homeStats || defaultStats
       const as_ = awayStats || defaultStats
 
-      // Calculate confidence based on data quality (0-1)
-      const homeConf = Math.min(1, (hs.matchesPlayed || 0) / 15) // Full confidence at 15+ matches
+      // --- Confidence ---
+      const homeConf = Math.min(1, (hs.matchesPlayed || 0) / 15)
       const awayConf = Math.min(1, (as_.matchesPlayed || 0) / 15)
       const confidence = (homeConf + awayConf) / 2
 
-      // Use HOME-SPECIFIC attack for home team, AWAY-SPECIFIC for away team
-      // This is the key improvement: Bayern at home attacks much stronger than overall
-      // homeXG = homeTeam_HOME_attack × awayTeam_AWAY_defense × leagueAvgHomeGoals
-      // awayXG = awayTeam_AWAY_attack × homeTeam_HOME_defense × leagueAvgAwayGoals
+      // --- Form-weighted attack/defense (home-specific) ---
       const effectiveFormWeight = FORM_WEIGHT * confidence
       const homeAtk = (hs.homeAttackStrength || hs.attackStrength) * (1 - effectiveFormWeight) + hs.formAttack * effectiveFormWeight
       const homeDef = (hs.homeDefenseStrength || hs.defenseStrength) * (1 - effectiveFormWeight) + hs.formDefense * effectiveFormWeight
       const awayAtk = (as_.awayAttackStrength || as_.attackStrength) * (1 - effectiveFormWeight) + as_.formAttack * effectiveFormWeight
       const awayDef = (as_.awayDefenseStrength || as_.defenseStrength) * (1 - effectiveFormWeight) + as_.formDefense * effectiveFormWeight
 
-      // Use actual league averages from the data, not hardcoded defaults
       const leagueHomeAvg = hs.leagueAvgHomeGoals || as_.leagueAvgHomeGoals || 1.5
       const leagueAwayAvg = hs.leagueAvgAwayGoals || as_.leagueAvgAwayGoals || 1.2
 
+      // --- FACTOR 1: Dixon-Coles Poisson prediction ---
       const pred = predictMatch(homeAtk, homeDef, awayAtk, awayDef, leagueHomeAvg, leagueAwayAvg)
 
-      // Find best value bet across all bookmakers
+      // --- FACTOR 2: ELO adjustment ---
+      const homeElo = hs.eloRating || 1500
+      const awayElo = as_.eloRating || 1500
+      const eloProbHome = eloToProb(homeElo, awayElo)
+      // Blend ELO into Poisson (20% ELO, 80% Poisson for the model component)
+      const eloWeight = 0.2
+      pred.homeWin = pred.homeWin * (1 - eloWeight) + eloProbHome * eloWeight
+      pred.awayWin = pred.awayWin * (1 - eloWeight) + (1 - eloProbHome) * 0.7 * eloWeight // 70% of non-home goes to away
+      pred.draw = 1 - pred.homeWin - pred.awayWin
+
+      // --- FACTOR 3: Rest days ---
+      let restDaysHome = null, restDaysAway = null
+      if (hs.lastMatchDate) {
+        restDaysHome = Math.round((new Date(match.utcDate).getTime() - new Date(hs.lastMatchDate).getTime()) / (24 * 60 * 60 * 1000))
+      }
+      if (as_.lastMatchDate) {
+        restDaysAway = Math.round((new Date(match.utcDate).getTime() - new Date(as_.lastMatchDate).getTime()) / (24 * 60 * 60 * 1000))
+      }
+      const restHomeF = restDaysFactor(restDaysHome)
+      const restAwayF = restDaysFactor(restDaysAway)
+      // Apply rest factor as relative advantage
+      if (restHomeF !== restAwayF) {
+        const restRatio = restHomeF / restAwayF
+        pred.homeWin *= restRatio
+        pred.awayWin *= (1 / restRatio)
+        // Re-normalize
+        const restTotal = pred.homeWin + pred.draw + pred.awayWin
+        pred.homeWin /= restTotal; pred.draw /= restTotal; pred.awayWin /= restTotal
+      }
+
+      // --- FACTOR 4: Head-to-head adjustment ---
+      let h2hAdjustment = 0
+      try {
+        const h2hMatches = await prisma.sportMatch.findMany({
+          where: {
+            status: 'FINISHED',
+            OR: [
+              { homeTeamId: match.homeTeamId, awayTeamId: match.awayTeamId },
+              { homeTeamId: match.awayTeamId, awayTeamId: match.homeTeamId },
+            ],
+          },
+          orderBy: { utcDate: 'desc' },
+          take: 6, // Last 6 meetings
+        })
+
+        if (h2hMatches.length >= 2) {
+          let h2hHomeWins = 0, h2hDraws = 0, h2hAwayWins = 0
+          for (const h2h of h2hMatches) {
+            if (h2h.homeScoreFullTime === null || h2h.awayScoreFullTime === null) continue
+            const isNormalOrder = h2h.homeTeamId === match.homeTeamId
+            const homeGoals = isNormalOrder ? h2h.homeScoreFullTime : h2h.awayScoreFullTime
+            const awayGoals = isNormalOrder ? h2h.awayScoreFullTime : h2h.homeScoreFullTime
+            if (homeGoals > awayGoals) h2hHomeWins++
+            else if (homeGoals < awayGoals) h2hAwayWins++
+            else h2hDraws++
+          }
+          const h2hTotal = h2hHomeWins + h2hDraws + h2hAwayWins
+          if (h2hTotal >= 2) {
+            const h2hHomePct = h2hHomeWins / h2hTotal
+            const h2hDrawPct = h2hDraws / h2hTotal
+            const h2hAwayPct = h2hAwayWins / h2hTotal
+            // Blend H2H at H2H_WEIGHT (8% max)
+            const w = H2H_WEIGHT * Math.min(1, h2hTotal / 4) // Scale by sample size
+            pred.homeWin = pred.homeWin * (1 - w) + h2hHomePct * w
+            pred.draw = pred.draw * (1 - w) + h2hDrawPct * w
+            pred.awayWin = pred.awayWin * (1 - w) + h2hAwayPct * w
+            h2hAdjustment = w
+          }
+        }
+      } catch (err) {
+        // H2H lookup failed, continue without it
+      }
+
+      // --- FACTOR 5: Market-implied probability blending ---
       const matchOdds = await prisma.matchOdds.findMany({
         where: { matchExternalId: match.externalId },
       })
 
-      // Only look for value bets if confidence is high enough (>50%)
+      const marketProbs = getMarketImpliedProbs(matchOdds)
+      const blended = blendProbabilities(pred, marketProbs, MARKET_BLEND_ALPHA)
+
+      // Use blended probabilities for value bet detection
+      // (model says X, market says Y — value exists when they disagree enough)
+      // For VALUE BET: compare RAW MODEL prob vs odds (not blended, because blended includes market)
       const minEVThreshold = confidence >= 0.7 ? 0.05 : confidence >= 0.5 ? 0.10 : 999
 
       let bestMarket = null, bestEV = -1, bestOdds = 0, bestBookmaker = null, bestKelly = 0
@@ -983,41 +1187,35 @@ async function syncOddsAndPredict() {
 
       const hasValue = bestEV >= minEVThreshold
 
+      const predData = {
+        homeWinProb: blended.home,
+        drawProb: blended.draw,
+        awayWinProb: blended.away,
+        overProb: pred.over25,
+        underProb: pred.under25,
+        expectedHomeGoals: pred.homeXG,
+        expectedAwayGoals: pred.awayXG,
+        blendedHomeProb: blended.home,
+        blendedDrawProb: blended.draw,
+        blendedAwayProb: blended.away,
+        eloHomeRating: homeElo,
+        eloAwayRating: awayElo,
+        restDaysHome,
+        restDaysAway,
+        h2hAdjustment: h2hAdjustment > 0 ? h2hAdjustment : null,
+        bestValueMarket: hasValue ? bestMarket : null,
+        bestValueEV: hasValue ? bestEV : null,
+        bestValueOdds: hasValue ? bestOdds : null,
+        bestValueBookmaker: hasValue ? bestBookmaker : null,
+        kellyStake: hasValue ? bestKelly : null,
+        confidence,
+        modelVersion: 'poisson_v3_pro',
+      }
+
       await prisma.matchPrediction.upsert({
         where: { matchExternalId: match.externalId },
-        update: {
-          homeWinProb: pred.homeWin,
-          drawProb: pred.draw,
-          awayWinProb: pred.awayWin,
-          overProb: pred.over25,
-          underProb: pred.under25,
-          expectedHomeGoals: pred.homeXG,
-          expectedAwayGoals: pred.awayXG,
-          bestValueMarket: hasValue ? bestMarket : null,
-          bestValueEV: hasValue ? bestEV : null,
-          bestValueOdds: hasValue ? bestOdds : null,
-          bestValueBookmaker: hasValue ? bestBookmaker : null,
-          kellyStake: hasValue ? bestKelly : null,
-          confidence,
-          modelVersion: 'poisson_v2_home_away',
-        },
-        create: {
-          matchExternalId: match.externalId,
-          homeWinProb: pred.homeWin,
-          drawProb: pred.draw,
-          awayWinProb: pred.awayWin,
-          overProb: pred.over25,
-          underProb: pred.under25,
-          expectedHomeGoals: pred.homeXG,
-          expectedAwayGoals: pred.awayXG,
-          bestValueMarket: hasValue ? bestMarket : null,
-          bestValueEV: hasValue ? bestEV : null,
-          bestValueOdds: hasValue ? bestOdds : null,
-          bestValueBookmaker: hasValue ? bestBookmaker : null,
-          kellyStake: hasValue ? bestKelly : null,
-          confidence,
-          modelVersion: 'poisson_v2_home_away',
-        },
+        update: predData,
+        create: { matchExternalId: match.externalId, ...predData },
       })
     }
   }
@@ -1193,6 +1391,7 @@ async function main() {
   let lastSyncTime = Date.now()
   let lastWaSyncTime = Date.now()
   let lastOddsSyncTime = Date.now()
+  let lastStatsTime = Date.now()
   let loopCount = 0
 
   while (true) {
@@ -1214,12 +1413,20 @@ async function main() {
       // Re-sync schedule every 6 hours
       if (Date.now() - lastSyncTime > 6 * 60 * 60 * 1000) {
         await syncUpcomingMatches()
-        await updateTeamStats()
         lastSyncTime = Date.now()
       }
 
-      // Sync odds every 2 hours (to save API credits — 500/month limit)
-      if (Date.now() - lastOddsSyncTime > 2 * 60 * 60 * 1000) {
+      // Recalculate team stats + ELO once per day (24h)
+      if (Date.now() - lastStatsTime > 24 * 60 * 60 * 1000) {
+        console.log('📊 Daily stats recalculation starting...')
+        await updateTeamStats()
+        lastStatsTime = Date.now()
+      }
+
+      // Sync odds twice per day (to conserve API credits — 500/month limit)
+      // 8 leagues × 2 credits = 16 credits per sync × 2/day = 32/day ≈ 960/month
+      // With free tier we need to be selective — only sync leagues with upcoming matches
+      if (Date.now() - lastOddsSyncTime > 12 * 60 * 60 * 1000) {
         await syncOddsAndPredict()
         await updateBrierScores()
         await sendValueBetNotifications()

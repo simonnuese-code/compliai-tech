@@ -512,6 +512,12 @@ model TeamStats {
   formAttack        Float    @default(1.0)
   formDefense       Float    @default(1.0)
 
+  // ELO rating (dynamic, updates after each match)
+  eloRating         Float    @default(1500)
+
+  // Last match date (for rest days calculation)
+  lastMatchDate     DateTime?
+
   updatedAt         DateTime @updatedAt
 
   @@unique([teamId, competitionCode, season])
@@ -560,6 +566,18 @@ model MatchPrediction {
   bestValueOdds     Float?   // Odds for best value bet
   bestValueBookmaker String?
   kellyStake        Float?   // Kelly criterion recommended stake %
+
+  // Market-blended probabilities (model × market consensus)
+  blendedHomeProb   Float?
+  blendedDrawProb   Float?
+  blendedAwayProb   Float?
+
+  // Factors applied (for transparency/debugging)
+  eloHomeRating     Float?
+  eloAwayRating     Float?
+  restDaysHome      Int?
+  restDaysAway      Int?
+  h2hAdjustment     Float?   // H2H factor applied
 
   // Model metadata
   modelVersion      String   @default("poisson_v1")
