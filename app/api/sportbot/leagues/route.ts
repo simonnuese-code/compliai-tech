@@ -16,6 +16,7 @@ export async function GET() {
       name: l.name,
       country: l.country,
       flag: l.flag,
+      type: l.type,
     })),
   })
 }

@@ -354,9 +354,9 @@ async function syncUpcomingMatches() {
 
   const teamIds = new Set(allFollowed.map(t => t.teamId))
 
-  // Fetch matches for next 7 days
+  // Fetch matches for next 14 days (wider window to catch international breaks)
   const dateFrom = new Date().toISOString().split('T')[0]
-  const dateTo = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const dateTo = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
   const data = await footballApi(`/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`)
   if (!data) return
@@ -657,7 +657,12 @@ const COMP_TO_ODDS = {
   'DED': 'soccer_netherlands_eredivisie',
   'PPL': 'soccer_portugal_primeira_liga',
   'CL': 'soccer_uefa_champs_league',
+  'WC': 'soccer_fifa_world_cup',
+  'EC': 'soccer_uefa_european_championship',
 }
+
+// International competitions (handled differently: no season-long stats)
+const INTERNATIONAL_COMPS = ['WC', 'EC']
 
 // Team name aliases for matching between APIs
 const TEAM_ALIASES = {
@@ -686,6 +691,63 @@ const TEAM_ALIASES = {
   'AC Milan': ['AC Milan'],
   'Juventus FC': ['Juventus'],
   'SSC Napoli': ['Napoli'],
+  // National Teams
+  'Germany': ['Germany', 'Deutschland'],
+  'France': ['France', 'Frankreich'],
+  'Spain': ['Spain', 'Spanien'],
+  'Italy': ['Italy', 'Italien'],
+  'England': ['England'],
+  'Portugal': ['Portugal'],
+  'Netherlands': ['Netherlands', 'Holland', 'Niederlande'],
+  'Belgium': ['Belgium', 'Belgien'],
+  'Brazil': ['Brazil', 'Brasilien'],
+  'Argentina': ['Argentina', 'Argentinien'],
+  'Croatia': ['Croatia', 'Kroatien'],
+  'Denmark': ['Denmark', 'Dänemark'],
+  'Switzerland': ['Switzerland', 'Schweiz'],
+  'Austria': ['Austria', 'Österreich'],
+  'Poland': ['Poland', 'Polen'],
+  'Turkey': ['Turkey', 'Türkei'],
+  'Ukraine': ['Ukraine'],
+  'Serbia': ['Serbia', 'Serbien'],
+  'Scotland': ['Scotland', 'Schottland'],
+  'Sweden': ['Sweden', 'Schweden'],
+  'Norway': ['Norway', 'Norwegen'],
+  'USA': ['United States', 'USA', 'US'],
+  'Mexico': ['Mexico', 'Mexiko'],
+  'Japan': ['Japan'],
+  'South Korea': ['South Korea', 'Korea Republic'],
+  'Australia': ['Australia', 'Australien'],
+  'Canada': ['Canada', 'Kanada'],
+  'Morocco': ['Morocco', 'Marokko'],
+  'Senegal': ['Senegal'],
+  'Colombia': ['Colombia', 'Kolumbien'],
+  'Uruguay': ['Uruguay'],
+  'Ecuador': ['Ecuador'],
+  'Wales': ['Wales'],
+  'Czech Republic': ['Czech Republic', 'Czechia', 'Tschechien'],
+  'Hungary': ['Hungary', 'Ungarn'],
+  'Romania': ['Romania', 'Rumänien'],
+  'Greece': ['Greece', 'Griechenland'],
+  'Republic of Ireland': ['Republic of Ireland', 'Ireland'],
+  'Chile': ['Chile'],
+  'Peru': ['Peru'],
+  'Paraguay': ['Paraguay'],
+  'Venezuela': ['Venezuela'],
+  'Costa Rica': ['Costa Rica'],
+  'Panama': ['Panama'],
+  'Honduras': ['Honduras'],
+  'Jamaica': ['Jamaica', 'Jamaika'],
+  'Qatar': ['Qatar', 'Katar'],
+  'Saudi Arabia': ['Saudi Arabia', 'Saudi-Arabien'],
+  'Iran': ['Iran'],
+  'Ghana': ['Ghana'],
+  'Cameroon': ['Cameroon', 'Kamerun'],
+  'Nigeria': ['Nigeria'],
+  'Tunisia': ['Tunisia', 'Tunesien'],
+  'Egypt': ['Egypt', 'Ägypten'],
+  'Algeria': ['Algeria', 'Algerien'],
+  'Ivory Coast': ['Ivory Coast', 'Cote D\'Ivoire', 'Elfenbeinküste'],
 }
 
 function matchTeamName(fdName, oddsNames) {
@@ -730,8 +792,9 @@ async function fetchOddsForCompetition(competitionCode) {
 
 // ===== TEAM STATS & PREDICTIONS =====
 
-// Leagues to fetch full season data for (football-data.org free tier supports these)
+// All competitions to fetch stats for (club leagues + international)
 const SUPPORTED_LEAGUES = ['BL1', 'PL', 'PD', 'SA', 'FL1', 'ELC', 'DED', 'PPL']
+const ALL_COMPETITIONS = [...SUPPORTED_LEAGUES, 'WC', 'EC', 'CL']
 
 async function updateTeamStats() {
   console.log('📊 Updating team stats from full season data...')
@@ -921,6 +984,162 @@ async function updateTeamStats() {
       await sleep(7000)
     } catch (err) {
       console.error(`📊 [${compCode}] Error:`, err.message)
+    }
+  }
+
+  // === INTERNATIONAL COMPETITIONS (WC, EC) ===
+  // National teams: use last tournament data + recent matches
+  for (const compCode of INTERNATIONAL_COMPS) {
+    try {
+      const matchData = await footballApi(`/competitions/${compCode}/matches?status=FINISHED`)
+      if (!matchData || !matchData.matches || matchData.matches.length === 0) {
+        console.log(`📊 [${compCode}] No finished matches`)
+        await sleep(7000)
+        continue
+      }
+
+      const allMatches = matchData.matches
+      console.log(`📊 [${compCode}] Processing ${allMatches.length} international matches`)
+
+      // Calculate averages across all international matches
+      let totalHomeGoals = 0, totalAwayGoals = 0, totalGames = 0
+      for (const m of allMatches) {
+        const hg = m.score?.fullTime?.home
+        const ag = m.score?.fullTime?.away
+        if (hg === null || hg === undefined || ag === null || ag === undefined) continue
+        totalHomeGoals += hg
+        totalAwayGoals += ag
+        totalGames++
+      }
+      if (totalGames === 0) { await sleep(7000); continue }
+
+      const leagueAvgHomeGoals = totalHomeGoals / totalGames
+      const leagueAvgAwayGoals = totalAwayGoals / totalGames
+
+      // Build team stats (same approach but with 'season' = tournament year)
+      const teamData = {}
+      const sortedMatches = [...allMatches]
+        .filter(m => m.score?.fullTime?.home !== null && m.score?.fullTime?.home !== undefined)
+        .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
+
+      for (const m of sortedMatches) {
+        for (const [id, name] of [[m.homeTeam.id, m.homeTeam.name], [m.awayTeam.id, m.awayTeam.name]]) {
+          if (!teamData[id]) {
+            teamData[id] = {
+              teamName: name, goalsScored: 0, goalsConceded: 0, matchesPlayed: 0,
+              homeGoalsScored: 0, homeGoalsConceded: 0, homeMatches: 0,
+              awayGoalsScored: 0, awayGoalsConceded: 0, awayMatches: 0,
+              recentMatches: [], elo: 1500, lastMatchDate: null,
+            }
+          }
+        }
+      }
+
+      for (const m of sortedMatches) {
+        const hg = m.score.fullTime.home
+        const ag = m.score.fullTime.away
+        const homeId = m.homeTeam.id
+        const awayId = m.awayTeam.id
+        const ht = teamData[homeId]
+        const at = teamData[awayId]
+
+        // ELO update
+        const homeExpected = eloExpectedScore(ht.elo + ELO_HOME_ADVANTAGE, at.elo)
+        const goalDiff = Math.abs(hg - ag)
+        const homeActual = hg > ag ? 1 : hg === ag ? 0.5 : 0
+        ht.elo = eloUpdate(ht.elo, homeExpected, homeActual, goalDiff)
+        at.elo = eloUpdate(at.elo, 1 - homeExpected, 1 - homeActual, goalDiff)
+
+        // Stats
+        ht.goalsScored += hg; ht.goalsConceded += ag; ht.matchesPlayed++
+        ht.homeGoalsScored += hg; ht.homeGoalsConceded += ag; ht.homeMatches++
+        ht.recentMatches.push({ scored: hg, conceded: ag, date: m.utcDate, isHome: true, goalDiff: hg - ag })
+        ht.lastMatchDate = m.utcDate
+
+        at.goalsScored += ag; at.goalsConceded += hg; at.matchesPlayed++
+        at.awayGoalsScored += ag; at.awayGoalsConceded += hg; at.awayMatches++
+        at.recentMatches.push({ scored: ag, conceded: hg, date: m.utcDate, isHome: false, goalDiff: ag - hg })
+        at.lastMatchDate = m.utcDate
+      }
+
+      // Save stats (use currentYear as season for internationals)
+      const intSeason = currentYear
+      const leagueOverallAvg = (leagueAvgHomeGoals + leagueAvgAwayGoals) / 2
+
+      for (const [teamIdStr, data] of Object.entries(teamData)) {
+        const teamId = parseInt(teamIdStr)
+        const attackRaw = leagueOverallAvg > 0 ? (data.goalsScored / data.matchesPlayed) / leagueOverallAvg : 1.0
+        const defenseRaw = leagueOverallAvg > 0 ? (data.goalsConceded / data.matchesPlayed) / leagueOverallAvg : 1.0
+        const attackStrength = regressToMean(attackRaw, data.matchesPlayed)
+        const defenseStrength = regressToMean(defenseRaw, data.matchesPlayed)
+
+        let homeAttackStrength = attackStrength, homeDefenseStrength = defenseStrength
+        let awayAttackStrength = attackStrength, awayDefenseStrength = defenseStrength
+        if (data.homeMatches >= 2 && leagueAvgHomeGoals > 0) {
+          homeAttackStrength = regressToMean((data.homeGoalsScored / data.homeMatches) / leagueAvgHomeGoals, data.homeMatches)
+          homeDefenseStrength = regressToMean((data.homeGoalsConceded / data.homeMatches) / leagueAvgAwayGoals, data.homeMatches)
+        }
+        if (data.awayMatches >= 2 && leagueAvgAwayGoals > 0) {
+          awayAttackStrength = regressToMean((data.awayGoalsScored / data.awayMatches) / leagueAvgAwayGoals, data.awayMatches)
+          awayDefenseStrength = regressToMean((data.awayGoalsConceded / data.awayMatches) / leagueAvgHomeGoals, data.awayMatches)
+        }
+
+        // Form from last 5
+        const recent = data.recentMatches.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-5)
+        let formAttack = attackStrength, formDefense = defenseStrength
+        if (recent.length >= 2) {
+          let wScored = 0, wConceded = 0, wSum = 0
+          recent.forEach((m, i) => {
+            const w = Math.pow(1.5, i)
+            const bonus = 1 + Math.max(0, m.goalDiff) * 0.1
+            wScored += m.scored * w * bonus
+            wConceded += m.conceded * w
+            wSum += w * bonus
+          })
+          formAttack = leagueOverallAvg > 0 ? (wScored / wSum) / leagueOverallAvg : 1.0
+          formDefense = leagueOverallAvg > 0 ? (wConceded / (wSum / 1)) / leagueOverallAvg : 1.0
+        }
+
+        await prisma.teamStats.upsert({
+          where: { teamId_competitionCode_season: { teamId, competitionCode: compCode, season: intSeason } },
+          update: {
+            teamName: data.teamName, attackStrength: parseFloat(attackStrength.toFixed(4)),
+            defenseStrength: parseFloat(defenseStrength.toFixed(4)),
+            homeAttackStrength: parseFloat(homeAttackStrength.toFixed(4)),
+            homeDefenseStrength: parseFloat(homeDefenseStrength.toFixed(4)),
+            awayAttackStrength: parseFloat(awayAttackStrength.toFixed(4)),
+            awayDefenseStrength: parseFloat(awayDefenseStrength.toFixed(4)),
+            leagueAvgHomeGoals: parseFloat(leagueAvgHomeGoals.toFixed(4)),
+            leagueAvgAwayGoals: parseFloat(leagueAvgAwayGoals.toFixed(4)),
+            matchesPlayed: data.matchesPlayed, goalsScored: data.goalsScored, goalsConceded: data.goalsConceded,
+            homeGoalsScored: data.homeGoalsScored, homeGoalsConceded: data.homeGoalsConceded,
+            awayGoalsScored: data.awayGoalsScored, awayGoalsConceded: data.awayGoalsConceded,
+            homeMatchesPlayed: data.homeMatches, awayMatchesPlayed: data.awayMatches,
+            formAttack: parseFloat(formAttack.toFixed(4)), formDefense: parseFloat(formDefense.toFixed(4)),
+            eloRating: parseFloat(data.elo.toFixed(1)),
+            lastMatchDate: data.lastMatchDate ? new Date(data.lastMatchDate) : null,
+          },
+          create: {
+            teamId, competitionCode: compCode, season: intSeason, teamName: data.teamName,
+            attackStrength: parseFloat(attackStrength.toFixed(4)), defenseStrength: parseFloat(defenseStrength.toFixed(4)),
+            homeAttackStrength: parseFloat(homeAttackStrength.toFixed(4)), homeDefenseStrength: parseFloat(homeDefenseStrength.toFixed(4)),
+            awayAttackStrength: parseFloat(awayAttackStrength.toFixed(4)), awayDefenseStrength: parseFloat(awayDefenseStrength.toFixed(4)),
+            leagueAvgHomeGoals: parseFloat(leagueAvgHomeGoals.toFixed(4)), leagueAvgAwayGoals: parseFloat(leagueAvgAwayGoals.toFixed(4)),
+            matchesPlayed: data.matchesPlayed, goalsScored: data.goalsScored, goalsConceded: data.goalsConceded,
+            homeGoalsScored: data.homeGoalsScored, homeGoalsConceded: data.homeGoalsConceded,
+            awayGoalsScored: data.awayGoalsScored, awayGoalsConceded: data.awayGoalsConceded,
+            homeMatchesPlayed: data.homeMatches, awayMatchesPlayed: data.awayMatches,
+            formAttack: parseFloat(formAttack.toFixed(4)), formDefense: parseFloat(formDefense.toFixed(4)),
+            eloRating: parseFloat(data.elo.toFixed(1)),
+            lastMatchDate: data.lastMatchDate ? new Date(data.lastMatchDate) : null,
+          },
+        })
+      }
+
+      console.log(`🌍 [${compCode}] Updated stats + ELO for ${Object.keys(teamData).length} national teams (${totalGames} matches)`)
+      await sleep(7000)
+    } catch (err) {
+      console.error(`🌍 [${compCode}] Error:`, err.message)
     }
   }
 }
