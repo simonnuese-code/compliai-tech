@@ -483,9 +483,19 @@ model TeamStats {
   competitionCode   String   // e.g. "BL1"
   season            Int      // e.g. 2025
 
-  // Attack/defense strength (relative to league average)
+  // Overall attack/defense strength (relative to league average)
   attackStrength    Float    @default(1.0)
   defenseStrength   Float    @default(1.0)
+
+  // Home/away specific strengths (key for accurate Poisson model)
+  homeAttackStrength  Float  @default(1.0)  // home goals scored / league avg home goals
+  homeDefenseStrength Float  @default(1.0)  // home goals conceded / league avg away goals
+  awayAttackStrength  Float  @default(1.0)  // away goals scored / league avg away goals
+  awayDefenseStrength Float  @default(1.0)  // away goals conceded / league avg home goals
+
+  // League averages (stored per team row for easy access during prediction)
+  leagueAvgHomeGoals Float   @default(1.5)
+  leagueAvgAwayGoals Float   @default(1.2)
 
   // Raw stats
   matchesPlayed     Int      @default(0)
@@ -501,6 +511,12 @@ model TeamStats {
   // Form (last 5 matches weighted)
   formAttack        Float    @default(1.0)
   formDefense       Float    @default(1.0)
+
+  // ELO rating (dynamic, updates after each match)
+  eloRating         Float    @default(1500)
+
+  // Last match date (for rest days calculation)
+  lastMatchDate     DateTime?
 
   updatedAt         DateTime @updatedAt
 
@@ -550,6 +566,18 @@ model MatchPrediction {
   bestValueOdds     Float?   // Odds for best value bet
   bestValueBookmaker String?
   kellyStake        Float?   // Kelly criterion recommended stake %
+
+  // Market-blended probabilities (model × market consensus)
+  blendedHomeProb   Float?
+  blendedDrawProb   Float?
+  blendedAwayProb   Float?
+
+  // Factors applied (for transparency/debugging)
+  eloHomeRating     Float?
+  eloAwayRating     Float?
+  restDaysHome      Int?
+  restDaysAway      Int?
+  h2hAdjustment     Float?   // H2H factor applied
 
   // Model metadata
   modelVersion      String   @default("poisson_v1")

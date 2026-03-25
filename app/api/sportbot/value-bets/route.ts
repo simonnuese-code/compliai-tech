@@ -68,6 +68,16 @@ export async function GET() {
           bestValueBookmaker: prediction.bestValueBookmaker,
           kellyStake: prediction.kellyStake,
           confidence: prediction.confidence,
+          modelVersion: prediction.modelVersion,
+          // v3 Pro factors
+          eloHomeRating: prediction.eloHomeRating,
+          eloAwayRating: prediction.eloAwayRating,
+          restDaysHome: prediction.restDaysHome,
+          restDaysAway: prediction.restDaysAway,
+          h2hAdjustment: prediction.h2hAdjustment,
+          blendedHomeProb: prediction.blendedHomeProb,
+          blendedDrawProb: prediction.blendedDrawProb,
+          blendedAwayProb: prediction.blendedAwayProb,
         } : null,
         odds: odds.map(o => ({
           bookmaker: o.bookmaker,
