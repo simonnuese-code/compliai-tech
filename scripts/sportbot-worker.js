@@ -357,12 +357,13 @@ async function syncUpcomingMatches() {
     .filter(t => ['WC', 'EC'].includes(t.leagueCode || ''))
     .map(t => t.teamId)
 
-  // Fetch matches for next 14 days (wider window for international breaks)
+  // Global: max 10 days (API limit), team-specific: 14 days
   const dateFrom = new Date().toISOString().split('T')[0]
-  const dateTo = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const dateTo10 = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const dateTo14 = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-  // 1) Global match fetch (covers all league matches)
-  const data = await footballApi(`/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`)
+  // 1) Global match fetch (covers all league matches, max 10 days)
+  const data = await footballApi(`/matches?dateFrom=${dateFrom}&dateTo=${dateTo10}`)
   const allMatches = new Map() // externalId → match
 
   if (data) {
@@ -376,7 +377,7 @@ async function syncUpcomingMatches() {
   // 2) Team-specific fetch for national teams (catches friendlies, qualifiers, Nations League)
   for (const ntId of internationalTeamIds) {
     await sleep(6500) // Rate limit: 10 req/min
-    const teamData = await footballApi(`/teams/${ntId}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}&status=SCHEDULED,TIMED`)
+    const teamData = await footballApi(`/teams/${ntId}/matches?dateFrom=${dateFrom}&dateTo=${dateTo14}&status=SCHEDULED,TIMED`)
     if (teamData) {
       for (const m of (teamData.matches || [])) {
         if (!allMatches.has(m.id)) {
