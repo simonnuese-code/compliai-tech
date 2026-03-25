@@ -26,9 +26,9 @@ export async function GET(
   const teams = result.data?.teams.map(t => ({
     id: t.id,
     name: t.name,
-    shortName: t.shortName,
-    tla: t.tla,
-    crest: t.crest,
+    shortName: t.shortName || '',
+    tla: t.tla || '',
+    crest: t.crest || '',
   })) || []
 
   return NextResponse.json({ teams })
