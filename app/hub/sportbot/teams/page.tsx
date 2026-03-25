@@ -19,6 +19,7 @@ interface League {
   name: string
   country: string
   flag: string
+  type?: 'league' | 'international'
 }
 
 interface Team {
@@ -168,7 +169,7 @@ export default function TeamSelectionPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h1 className="text-2xl font-bold text-white mb-2">Teams auswählen</h1>
-          <p className="text-slate-400 mb-8">Wähle eine Liga und folge deinen Lieblingsteams.</p>
+          <p className="text-slate-400 mb-8">Wähle eine Liga oder ein Turnier und folge deinen Lieblingsteams und Nationalmannschaften.</p>
         </motion.div>
 
         {/* League Selector */}
@@ -178,41 +179,82 @@ export default function TeamSelectionPage() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Liga wählen</h2>
           {loadingLeagues ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 text-emerald-500 animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-              {leagues.map((league, i) => (
-                <motion.button
-                  key={league.code}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * i }}
-                  onClick={() => setSelectedLeague(selectedLeague === league.code ? null : league.code)}
-                  className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-300 ${
-                    selectedLeague === league.code
-                      ? 'border-emerald-500/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
-                      : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
-                  }`}
-                >
-                  <span className="text-2xl">{league.flag}</span>
-                  <span className={`text-xs font-medium text-center ${
-                    selectedLeague === league.code ? 'text-emerald-400' : 'text-slate-300'
-                  }`}>
-                    {league.name}
-                  </span>
-                  {/* Count of followed teams in this league */}
-                  {followedTeams.filter(t => t.leagueCode === league.code).length > 0 && (
-                    <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold">
-                      {followedTeams.filter(t => t.leagueCode === league.code).length}
+            <>
+              {/* International Tournaments */}
+              {leagues.filter(l => l.type === 'international').length > 0 && (
+                <>
+                  <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="text-base">🌍</span> Internationale Turniere
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-6">
+                    {leagues.filter(l => l.type === 'international').map((league, i) => (
+                      <motion.button
+                        key={league.code}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 * i }}
+                        onClick={() => setSelectedLeague(selectedLeague === league.code ? null : league.code)}
+                        className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-300 ${
+                          selectedLeague === league.code
+                            ? 'border-amber-500/50 bg-amber-500/10 shadow-lg shadow-amber-500/10'
+                            : 'border-amber-500/10 bg-amber-500/5 hover:border-amber-500/20 hover:bg-amber-500/10'
+                        }`}
+                      >
+                        <span className="text-2xl">{league.flag}</span>
+                        <span className={`text-xs font-medium text-center ${
+                          selectedLeague === league.code ? 'text-amber-400' : 'text-slate-300'
+                        }`}>
+                          {league.name}
+                        </span>
+                        {followedTeams.filter(t => t.leagueCode === league.code).length > 0 && (
+                          <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">
+                            {followedTeams.filter(t => t.leagueCode === league.code).length}
+                          </span>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Club Leagues */}
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="text-base">⚽</span> Vereinsligen
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {leagues.filter(l => l.type !== 'international').map((league, i) => (
+                  <motion.button
+                    key={league.code}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 * i }}
+                    onClick={() => setSelectedLeague(selectedLeague === league.code ? null : league.code)}
+                    className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-300 ${
+                      selectedLeague === league.code
+                        ? 'border-emerald-500/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="text-2xl">{league.flag}</span>
+                    <span className={`text-xs font-medium text-center ${
+                      selectedLeague === league.code ? 'text-emerald-400' : 'text-slate-300'
+                    }`}>
+                      {league.name}
                     </span>
-                  )}
-                </motion.button>
-              ))}
-            </div>
+                    {followedTeams.filter(t => t.leagueCode === league.code).length > 0 && (
+                      <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center font-bold">
+                        {followedTeams.filter(t => t.leagueCode === league.code).length}
+                      </span>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </>
           )}
         </motion.div>
 

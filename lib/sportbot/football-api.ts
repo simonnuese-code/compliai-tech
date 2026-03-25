@@ -9,16 +9,18 @@ const API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
 
 // Top European Leagues we support
 export const SUPPORTED_LEAGUES = [
-  { code: 'BL1', name: 'Bundesliga', country: 'Germany', flag: '🇩🇪' },
-  { code: 'PL',  name: 'Premier League', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { code: 'PD',  name: 'La Liga', country: 'Spain', flag: '🇪🇸' },
-  { code: 'SA',  name: 'Serie A', country: 'Italy', flag: '🇮🇹' },
-  { code: 'FL1', name: 'Ligue 1', country: 'France', flag: '🇫🇷' },
-  { code: 'CL',  name: 'Champions League', country: 'Europe', flag: '🏆' },
-  { code: 'ELC', name: 'Championship', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { code: 'PPL', name: 'Primeira Liga', country: 'Portugal', flag: '🇵🇹' },
-  { code: 'DED', name: 'Eredivisie', country: 'Netherlands', flag: '🇳🇱' },
-  { code: 'EC',  name: 'Europa League', country: 'Europe', flag: '🏆' },
+  { code: 'BL1', name: 'Bundesliga', country: 'Germany', flag: '🇩🇪', type: 'league' as const },
+  { code: 'PL',  name: 'Premier League', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', type: 'league' as const },
+  { code: 'PD',  name: 'La Liga', country: 'Spain', flag: '🇪🇸', type: 'league' as const },
+  { code: 'SA',  name: 'Serie A', country: 'Italy', flag: '🇮🇹', type: 'league' as const },
+  { code: 'FL1', name: 'Ligue 1', country: 'France', flag: '🇫🇷', type: 'league' as const },
+  { code: 'CL',  name: 'Champions League', country: 'Europe', flag: '🏆', type: 'league' as const },
+  { code: 'ELC', name: 'Championship', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', type: 'league' as const },
+  { code: 'PPL', name: 'Primeira Liga', country: 'Portugal', flag: '🇵🇹', type: 'league' as const },
+  { code: 'DED', name: 'Eredivisie', country: 'Netherlands', flag: '🇳🇱', type: 'league' as const },
+  // International Tournaments
+  { code: 'WC',  name: 'FIFA WM 2026', country: 'Welt', flag: '🌍', type: 'international' as const },
+  { code: 'EC',  name: 'Europameisterschaft', country: 'Europa', flag: '🇪🇺', type: 'international' as const },
 ] as const
 
 export type LeagueCode = typeof SUPPORTED_LEAGUES[number]['code']
