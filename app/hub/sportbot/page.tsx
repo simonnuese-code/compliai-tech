@@ -271,18 +271,35 @@ function ValueBetCard({ data }: { data: ValueBetMatch }) {
 
       {prediction ? (
         <>
-          {/* Probability bar */}
+          {/* Probability bar — uses blended probs (model+market) when available */}
           <div className="mb-3">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-emerald-400">{(prediction.homeWinProb * 100).toFixed(0)}%</span>
-              <span className="text-slate-400">{(prediction.drawProb * 100).toFixed(0)}%</span>
-              <span className="text-blue-400">{(prediction.awayWinProb * 100).toFixed(0)}%</span>
-            </div>
-            <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
-              <div className="bg-emerald-500" style={{ width: `${prediction.homeWinProb * 100}%` }} />
-              <div className="bg-slate-500" style={{ width: `${prediction.drawProb * 100}%` }} />
-              <div className="bg-blue-500" style={{ width: `${prediction.awayWinProb * 100}%` }} />
-            </div>
+            {(() => {
+              const hp = prediction.blendedHomeProb ?? prediction.homeWinProb
+              const dp = prediction.blendedDrawProb ?? prediction.drawProb
+              const ap = prediction.blendedAwayProb ?? prediction.awayWinProb
+              const isBlended = !!(prediction.blendedHomeProb)
+              return (
+                <>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-emerald-400">{(hp * 100).toFixed(0)}%</span>
+                    <span className="text-slate-400">{(dp * 100).toFixed(0)}%</span>
+                    <span className="text-blue-400">{(ap * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
+                    <div className="bg-emerald-500" style={{ width: `${hp * 100}%` }} />
+                    <div className="bg-slate-500" style={{ width: `${dp * 100}%` }} />
+                    <div className="bg-blue-500" style={{ width: `${ap * 100}%` }} />
+                  </div>
+                  {isBlended && (
+                    <div className="flex justify-between text-[10px] mt-0.5 text-slate-600">
+                      <span>Modell: {(prediction.homeWinProb * 100).toFixed(0)}%</span>
+                      <span>Markt-Blend 60/40</span>
+                      <span>Modell: {(prediction.awayWinProb * 100).toFixed(0)}%</span>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
 
           {/* xG + Confidence */}

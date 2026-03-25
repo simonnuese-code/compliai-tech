@@ -341,9 +341,9 @@ async function checkPreMatchNotifications() {
 async function syncUpcomingMatches() {
   console.log('📅 Syncing upcoming matches...')
 
-  // Get all unique team IDs being followed
+  // Get all unique team IDs being followed (with league info)
   const allFollowed = await prisma.followedTeam.findMany({
-    select: { teamId: true },
+    select: { teamId: true, leagueCode: true },
     distinct: ['teamId'],
   })
 
@@ -353,19 +353,42 @@ async function syncUpcomingMatches() {
   }
 
   const teamIds = new Set(allFollowed.map(t => t.teamId))
+  const internationalTeamIds = allFollowed
+    .filter(t => ['WC', 'EC'].includes(t.leagueCode || ''))
+    .map(t => t.teamId)
 
-  // Fetch matches for next 7 days
+  // Fetch matches for next 14 days (wider window for international breaks)
   const dateFrom = new Date().toISOString().split('T')[0]
-  const dateTo = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const dateTo = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
+  // 1) Global match fetch (covers all league matches)
   const data = await footballApi(`/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`)
-  if (!data) return
+  const allMatches = new Map() // externalId → match
 
-  const relevantMatches = (data.matches || []).filter(m =>
-    teamIds.has(m.homeTeam.id) || teamIds.has(m.awayTeam.id)
-  )
+  if (data) {
+    for (const m of (data.matches || [])) {
+      if (teamIds.has(m.homeTeam.id) || teamIds.has(m.awayTeam.id)) {
+        allMatches.set(m.id, m)
+      }
+    }
+  }
 
-  console.log(`📅 Found ${relevantMatches.length} relevant matches`)
+  // 2) Team-specific fetch for national teams (catches friendlies, qualifiers, Nations League)
+  for (const ntId of internationalTeamIds) {
+    await sleep(6500) // Rate limit: 10 req/min
+    const teamData = await footballApi(`/teams/${ntId}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}&status=SCHEDULED,TIMED`)
+    if (teamData) {
+      for (const m of (teamData.matches || [])) {
+        if (!allMatches.has(m.id)) {
+          allMatches.set(m.id, m)
+          console.log(`📅 🌍 Found extra match via team endpoint: ${m.homeTeam.name} vs ${m.awayTeam.name} (${m.competition?.name || 'Unknown'})`)
+        }
+      }
+    }
+  }
+
+  const relevantMatches = Array.from(allMatches.values())
+  console.log(`📅 Found ${relevantMatches.length} relevant matches (${internationalTeamIds.length} national teams checked)`)
 
   for (const match of relevantMatches) {
     await prisma.sportMatch.upsert({
@@ -405,48 +428,66 @@ async function syncUpcomingMatches() {
   const pastFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const pastTo = new Date().toISOString().split('T')[0]
 
+  const pastMatches = new Map()
+
+  // Global past results
   const pastData = await footballApi(`/matches?dateFrom=${pastFrom}&dateTo=${pastTo}&status=FINISHED`)
   if (pastData) {
-    const pastMatches = (pastData.matches || []).filter(m =>
-      teamIds.has(m.homeTeam.id) || teamIds.has(m.awayTeam.id)
-    )
-
-    for (const match of pastMatches) {
-      await prisma.sportMatch.upsert({
-        where: { externalId: match.id },
-        update: {
-          status: match.status,
-          homeScoreFullTime: match.score?.fullTime?.home,
-          awayScoreFullTime: match.score?.fullTime?.away,
-          homeScoreHalfTime: match.score?.halfTime?.home,
-          awayScoreHalfTime: match.score?.halfTime?.away,
-          lastUpdatedAt: new Date(),
-        },
-        create: {
-          externalId: match.id,
-          competitionCode: match.competition?.code || '',
-          competitionName: match.competition?.name || '',
-          competitionEmblem: match.competition?.emblem,
-          matchday: match.matchday,
-          stage: match.stage,
-          homeTeamId: match.homeTeam.id,
-          homeTeamName: match.homeTeam.name,
-          homeTeamCrest: match.homeTeam.crest,
-          awayTeamId: match.awayTeam.id,
-          awayTeamName: match.awayTeam.name,
-          awayTeamCrest: match.awayTeam.crest,
-          status: match.status,
-          utcDate: new Date(match.utcDate),
-          homeScoreFullTime: match.score?.fullTime?.home,
-          awayScoreFullTime: match.score?.fullTime?.away,
-          homeScoreHalfTime: match.score?.halfTime?.home,
-          awayScoreHalfTime: match.score?.halfTime?.away,
-        },
-      })
+    for (const m of (pastData.matches || [])) {
+      if (teamIds.has(m.homeTeam.id) || teamIds.has(m.awayTeam.id)) {
+        pastMatches.set(m.id, m)
+      }
     }
-
-    console.log(`📅 Synced ${pastMatches.length} past results (last 7 days)`)
   }
+
+  // Team-specific past results for national teams (catches friendlies)
+  for (const ntId of internationalTeamIds) {
+    await sleep(6500) // Rate limit
+    const teamPast = await footballApi(`/teams/${ntId}/matches?dateFrom=${pastFrom}&dateTo=${pastTo}&status=FINISHED`)
+    if (teamPast) {
+      for (const m of (teamPast.matches || [])) {
+        if (!pastMatches.has(m.id)) {
+          pastMatches.set(m.id, m)
+        }
+      }
+    }
+  }
+
+  for (const match of pastMatches.values()) {
+    await prisma.sportMatch.upsert({
+      where: { externalId: match.id },
+      update: {
+        status: match.status,
+        homeScoreFullTime: match.score?.fullTime?.home,
+        awayScoreFullTime: match.score?.fullTime?.away,
+        homeScoreHalfTime: match.score?.halfTime?.home,
+        awayScoreHalfTime: match.score?.halfTime?.away,
+        lastUpdatedAt: new Date(),
+      },
+      create: {
+        externalId: match.id,
+        competitionCode: match.competition?.code || '',
+        competitionName: match.competition?.name || '',
+        competitionEmblem: match.competition?.emblem,
+        matchday: match.matchday,
+        stage: match.stage,
+        homeTeamId: match.homeTeam.id,
+        homeTeamName: match.homeTeam.name,
+        homeTeamCrest: match.homeTeam.crest,
+        awayTeamId: match.awayTeam.id,
+        awayTeamName: match.awayTeam.name,
+        awayTeamCrest: match.awayTeam.crest,
+        status: match.status,
+        utcDate: new Date(match.utcDate),
+        homeScoreFullTime: match.score?.fullTime?.home,
+        awayScoreFullTime: match.score?.fullTime?.away,
+        homeScoreHalfTime: match.score?.halfTime?.home,
+        awayScoreHalfTime: match.score?.halfTime?.away,
+      },
+    })
+  }
+
+  console.log(`📅 Synced ${pastMatches.size} past results (last 7 days)`)
 }
 
 // ===== WHATSAPP SESSION SYNC =====
