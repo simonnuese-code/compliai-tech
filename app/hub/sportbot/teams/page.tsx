@@ -135,11 +135,14 @@ export default function TeamSelectionPage() {
     setSavingTeam(null)
   }
 
-  const filteredTeams = teams.filter(t =>
-    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.shortName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.tla.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredTeams = teams.filter(t => {
+    const q = searchQuery.toLowerCase()
+    return (
+      (t.name || '').toLowerCase().includes(q) ||
+      (t.shortName || '').toLowerCase().includes(q) ||
+      (t.tla || '').toLowerCase().includes(q)
+    )
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
@@ -322,7 +325,7 @@ export default function TeamSelectionPage() {
                           <p className={`text-sm font-semibold truncate ${followed ? 'text-emerald-400' : 'text-white'}`}>
                             {team.name}
                           </p>
-                          <p className="text-xs text-slate-500">{team.shortName} • {team.tla}</p>
+                          <p className="text-xs text-slate-500">{[team.shortName, team.tla].filter(Boolean).join(' • ') || 'Nationalmannschaft'}</p>
                         </div>
                         <div className="flex-shrink-0">
                           {saving ? (
