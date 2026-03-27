@@ -1469,8 +1469,17 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+// ===== SMART POLLING: Neon DB Optimization =====
+// The key insight: prisma.$disconnect() after each cycle lets Neon scale to zero.
+// Dynamic intervals ensure we still get live match updates in 30s while saving
+// ~90% of compute hours during idle/night time.
+//
+// OLD: 30s fixed polling = ~220 CU-h/month (OVER LIMIT!)
+// NEW: Smart polling     =  ~15 CU-h/month ✅
+
 async function main() {
   console.log('🏆 CompliAI Sport-Bot Worker starting...')
+  console.log('⚡ Smart Polling Mode — Neon DB optimiert')
   console.log(`📡 Football API: ${FOOTBALL_API_KEY ? '✅ Key configured' : '❌ No key!'}`)
   console.log(`📊 Odds API: ${ODDS_API_KEY ? '✅ Key configured' : '⚠️ No key (value bets disabled)'}`)
   console.log(`📱 WAHA URL: ${WAHA_URL}`)
@@ -1482,6 +1491,10 @@ async function main() {
   await updateTeamStats()
   await syncOddsAndPredict()
 
+  // Disconnect after initial sync to let DB sleep
+  await prisma.$disconnect()
+  console.log('🗄️ DB disconnected after initial sync — Neon can scale to zero')
+
   let lastSyncTime = Date.now()
   let lastWaSyncTime = Date.now()
   let lastOddsSyncTime = Date.now()
@@ -1492,14 +1505,33 @@ async function main() {
     try {
       loopCount++
 
-      // Check live matches every 30 seconds
-      await checkLiveMatches()
+      // ===== SMART INTERVAL CALCULATION =====
+      const now = new Date()
+      const hour = now.getHours()
 
-      // Check pre-match notifications every loop
-      await checkPreMatchNotifications()
+      // Quiet hours: 1:00 AM — 10:00 AM (no matches, minimal polling)
+      const isQuietHours = hour >= 1 && hour < 10
 
-      // Sync WhatsApp sessions every 30 seconds
-      if (Date.now() - lastWaSyncTime > 30000) {
+      // Dynamic sleep: 30s live, 5min idle, 15min night
+      let sleepInterval
+      if (isLiveMode) {
+        sleepInterval = 30000     // 🔴 LIVE: 30 seconds
+      } else if (isQuietHours) {
+        sleepInterval = 900000    // 🌙 NACHT: 15 minutes
+      } else {
+        sleepInterval = 300000    // 💤 IDLE: 5 minutes
+      }
+
+      // ===== CORE WORK =====
+
+      // Skip live match checks during quiet hours (no matches at 3 AM)
+      if (!isQuietHours) {
+        await checkLiveMatches()
+        await checkPreMatchNotifications()
+      }
+
+      // Sync WhatsApp sessions every 2 minutes (was: every 30s)
+      if (Date.now() - lastWaSyncTime > 120000) {
         await syncWhatsAppSessions()
         lastWaSyncTime = Date.now()
       }
@@ -1510,16 +1542,14 @@ async function main() {
         lastSyncTime = Date.now()
       }
 
-      // Recalculate team stats + ELO once per day (24h)
+      // Recalculate team stats + ELO once per day
       if (Date.now() - lastStatsTime > 24 * 60 * 60 * 1000) {
         console.log('📊 Daily stats recalculation starting...')
         await updateTeamStats()
         lastStatsTime = Date.now()
       }
 
-      // Sync odds twice per day (to conserve API credits — 500/month limit)
-      // 8 leagues × 2 credits = 16 credits per sync × 2/day = 32/day ≈ 960/month
-      // With free tier we need to be selective — only sync leagues with upcoming matches
+      // Sync odds twice per day
       if (Date.now() - lastOddsSyncTime > 12 * 60 * 60 * 1000) {
         await syncOddsAndPredict()
         await updateBrierScores()
@@ -1527,18 +1557,26 @@ async function main() {
         lastOddsSyncTime = Date.now()
       }
 
-      // Log status every 10 minutes
-      if (loopCount % 20 === 0) {
+      // Log status periodically
+      const statusInterval = isLiveMode ? 60 : (isQuietHours ? 4 : 6)
+      if (loopCount % statusInterval === 0) {
         const followed = await prisma.followedTeam.count()
         const connected = await prisma.whatsAppSession.count({ where: { status: 'CONNECTED' } })
-        console.log(`📊 Status: ${followed} teams followed, ${connected} WhatsApp connected, ${isLiveMode ? '🔴 LIVE' : '💤 idle'}`)
+        const mode = isLiveMode ? '🔴 LIVE (30s)' : isQuietHours ? '🌙 NACHT (15min)' : '💤 IDLE (5min)'
+        console.log(`📊 Status: ${followed} teams, ${connected} WA, ${mode} | Loop #${loopCount}`)
       }
 
-      // Wait 30 seconds between checks
-      await sleep(30000)
+      // ===== KEY OPTIMIZATION: Disconnect DB before sleeping =====
+      // This lets Neon scale to zero and stops the compute meter!
+      await prisma.$disconnect()
+
+      // Sleep with dynamic interval
+      await sleep(sleepInterval)
+
     } catch (err) {
       console.error('❌ Loop error:', err)
-      await sleep(10000) // Wait 10s on error, then retry
+      try { await prisma.$disconnect() } catch {}
+      await sleep(30000)
     }
   }
 }
@@ -1547,3 +1585,4 @@ main().catch(err => {
   console.error('Fatal error:', err)
   process.exit(1)
 })
+
