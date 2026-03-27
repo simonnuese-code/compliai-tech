@@ -1485,11 +1485,22 @@ async function main() {
   console.log(`📱 WAHA URL: ${WAHA_URL}`)
   console.log(`🗄️ Database: ${DATABASE_URL ? '✅ Connected' : '❌ No DB URL!'}`)
 
-  // Initial sync
-  await syncUpcomingMatches()
-  await syncWhatsAppSessions()
-  await updateTeamStats()
-  await syncOddsAndPredict()
+  // Initial sync (with retry if DB is at compute limit)
+  let dbReady = false
+  while (!dbReady) {
+    try {
+      await syncUpcomingMatches()
+      await syncWhatsAppSessions()
+      await updateTeamStats()
+      await syncOddsAndPredict()
+      dbReady = true
+      console.log('✅ Initial sync complete')
+    } catch (err) {
+      console.warn('⚠️ DB not available (compute limit?), retrying in 5 min...', err.message)
+      try { await prisma.$disconnect() } catch {}
+      await sleep(300000) // Wait 5 min, then retry
+    }
+  }
 
   // Disconnect after initial sync to let DB sleep
   await prisma.$disconnect()
