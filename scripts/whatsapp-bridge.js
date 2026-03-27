@@ -21,10 +21,8 @@ const prisma = new PrismaClient()
 const PORT = process.env.WA_BRIDGE_PORT || 3001
 const QR_TIMEOUT_MS = 120000 // 2 minutes — destroy session if QR not scanned
 
-// Keep DB connection warm — Neon cold starts can add 1-2s to first query
-setInterval(async () => {
-  try { await prisma.$queryRaw`SELECT 1` } catch {}
-}, 30000)
+// NOTE: Removed DB heartbeat (SELECT 1 every 30s) to let Neon scale to zero
+// Prisma auto-reconnects on next query (~500ms cold start)
 
 // Prevent unhandled errors from crashing the process
 // whatsapp-web.js throws "Execution context was destroyed" during auth navigation
@@ -208,6 +206,9 @@ async function startSession(name) {
       }
     } catch (err) {
       console.error(`💬 [${name}] Message handler error:`, err.message)
+      if (err.message && err.message.includes('compute time quota')) {
+        await msg.reply('⚠️ Datenbank-Limit erreicht. Befehle funktionieren ab dem 1. des Monats wieder.')
+      }
     }
   })
 
@@ -539,23 +540,37 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, async () => {
   console.log(`📱 WhatsApp Bridge listening on port ${PORT}`)
 
-  // Auto-restore sessions from DB on startup (any session with a phone number has been connected before)
+  // Auto-restore sessions — try DB first, fall back to local auth storage
+  let sessionNames = []
   try {
     const savedSessions = await prisma.whatsAppSession.findMany({
       where: { phoneNumber: { not: null } },
     })
-    for (const wa of savedSessions) {
-      console.log(`🔄 Auto-restoring session: ${wa.sessionName}`)
-      try {
-        await startSession(wa.sessionName)
-      } catch (err) {
-        console.error(`⚠️ Failed to restore ${wa.sessionName}:`, err.message)
-      }
-    }
-    if (savedSessions.length > 0) {
-      console.log(`🔄 Restored ${savedSessions.length} session(s)`)
-    }
+    sessionNames = savedSessions.map(s => s.sessionName)
+    await prisma.$disconnect() // Let DB sleep after startup query
   } catch (err) {
-    console.error('⚠️ Session restore failed:', err.message)
+    console.warn('⚠️ DB unavailable for session restore, checking local auth storage...')
+    // Fall back: check if local auth data exists on disk
+    const fs = require('fs')
+    const authDir = '/opt/whatsapp-sessions'
+    try {
+      if (fs.existsSync(authDir)) {
+        const dirs = fs.readdirSync(authDir).filter(d => d.startsWith('session-'))
+        sessionNames = dirs.map(d => d.replace('session-', ''))
+        console.log(`📂 Found ${sessionNames.length} local session(s): ${sessionNames.join(', ')}`)
+      }
+    } catch {}
+  }
+
+  for (const name of sessionNames) {
+    console.log(`🔄 Auto-restoring session: ${name}`)
+    try {
+      await startSession(name)
+    } catch (err) {
+      console.error(`⚠️ Failed to restore ${name}:`, err.message)
+    }
+  }
+  if (sessionNames.length > 0) {
+    console.log(`🔄 Restored ${sessionNames.length} session(s)`)
   }
 })
