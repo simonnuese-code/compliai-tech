@@ -14,6 +14,7 @@ import {
     Sparkles,
     Shield,
     TrendingDown,
+    Fuel,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -238,6 +239,23 @@ export default function HubPageClient({ user }: { user: { name: string | null; e
                             "Live-Ergebnisse & Updates",
                             "WhatsApp-Benachrichtigungen",
                             "Alle europäischen Top-Ligen",
+                        ]}
+                    />
+
+                    <ServiceCard
+                        title="Spritpreis Tracker"
+                        description="Kraftstoffpreise vergleichen, günstigste Tankstelle finden und Preisentwicklung verfolgen."
+                        icon={<Fuel className="h-7 w-7 text-white" />}
+                        href="/hub/spritpreis"
+                        gradient="bg-gradient-to-br from-orange-500/10 to-amber-500/10"
+                        glowColor="#f97316"
+                        badge="NEU"
+                        badgeColor="bg-orange-500/20 text-orange-400"
+                        delay={0.35}
+                        features={[
+                            "Echtzeit-Preise für E5, E10 & Diesel",
+                            "Langzeit-Preisverlauf mit Graphen",
+                            "Günstigste Tankstelle im Umkreis",
                         ]}
                     />
                 </div>

@@ -41,6 +41,9 @@ model User {
   sportSettings    SportBotSettings?
   whatsappSession  WhatsAppSession?
   valueBetSettings ValueBetSettings?
+  
+  // Spritpreis Relations
+  favoriteStations FavoriteStation[]
 
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
@@ -612,4 +615,42 @@ model ValueBetSettings {
   updatedAt             DateTime @updatedAt
 
   @@map("value_bet_settings")
+}
+
+// ===========================================
+// SPRITPREIS TRACKER MODELS
+// ===========================================
+
+model FuelPriceSnapshot {
+  id            String   @id @default(cuid())
+  date          DateTime @db.Date
+  postalCode    String   @db.VarChar(5)
+  fuelType      String   // "e5", "e10", "diesel"
+  avgPrice      Float
+  minPrice      Float
+  maxPrice      Float
+  stationCount  Int
+
+  @@unique([date, postalCode, fuelType])
+  @@index([postalCode, fuelType, date])
+  @@map("fuel_price_snapshots")
+}
+
+model FavoriteStation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stationId     String   // Tankerkönig UUID
+  name          String
+  brand         String
+  street        String
+  city          String
+  postalCode    String   @db.VarChar(5)
+  lat           Float
+  lng           Float
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, stationId])
+  @@index([userId])
+  @@map("favorite_stations")
 }
