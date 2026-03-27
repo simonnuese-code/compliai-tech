@@ -153,9 +153,9 @@ async function startSession(name) {
   // Cache userId for fast message handling (avoids DB lookup on every message)
   let cachedUserId = null
 
-  // Handle incoming messages — reply with match results
-  client.on('message', async msg => {
-    // Only respond to messages from the connected user (to themselves)
+  // Handle all created messages (incoming AND outgoing) — reply with match results
+  client.on('message_create', async msg => {
+    // Only respond to messages from the connected user
     if (!sessionData.phoneNumber) return
     const fromMe = msg.from === `${sessionData.phoneNumber}@c.us` || msg.fromMe
     if (!fromMe) return
